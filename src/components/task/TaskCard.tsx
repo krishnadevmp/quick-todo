@@ -3,6 +3,7 @@ import { RefreshCw, Pencil, Trash2, Calendar, Tag } from 'lucide-react';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDueDate, isOverdue } from '@/utils/formatDate';
+import { toast } from '@/components/ui/Toast';
 import type { Task, Priority, TaskStatus } from '@/types';
 
 const PRIORITY_COLOR: Record<Priority, string> = {
@@ -56,9 +57,29 @@ export default function TaskCard({ task }: TaskCardProps) {
     });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    // Optimistically hide the card
     setIsDeleting(true);
-    await deleteTask(task.id);
+
+    // Schedule the actual delete after the undo window
+    let deleted = false;
+    const timeoutId = setTimeout(async () => {
+      deleted = true;
+      await deleteTask(task.id);
+    }, 4000);
+
+    // Show undo toast
+    toast.undo(
+      `"${task.title.slice(0, 40)}${task.title.length > 40 ? '…' : ''}" deleted`,
+      () => {
+        // Undo: cancel deletion and restore the card
+        if (!deleted) {
+          clearTimeout(timeoutId);
+          setIsDeleting(false);
+        }
+      },
+      4000,
+    );
   };
 
   return (
@@ -173,7 +194,7 @@ export default function TaskCard({ task }: TaskCardProps) {
       {isHovered && !isDeleting && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <button
-            onClick={() => openEditTask(task.id)}
+            onClick={() => openEditTask(task)}
             title="Edit task"
             style={{
               width: 28, height: 28, borderRadius: 'var(--radius-sm)',

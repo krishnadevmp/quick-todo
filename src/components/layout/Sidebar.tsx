@@ -4,92 +4,113 @@ import { useUIStore } from '@/stores/uiStore';
 import { TaskRepository } from '@/db/taskRepository';
 import type { ViewId } from '@/types';
 
-const NAV_ITEMS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
+const NAV_ITEMS: {
+  id: ViewId;
+  label: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+}[] = [
   { id: 'today',     label: 'Today',     icon: CalendarDays },
-  { id: 'upcoming',  label: 'Upcoming',  icon: Calendar },
-  { id: 'all',       label: 'All Tasks', icon: LayoutList },
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart2 },
-  { id: 'settings',  label: 'Settings',  icon: Settings },
+  { id: 'upcoming',  label: 'Upcoming',  icon: Calendar     },
+  { id: 'all',       label: 'All Tasks', icon: LayoutList   },
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart2    },
+  { id: 'settings',  label: 'Settings',  icon: Settings     },
 ];
 
 export default function Sidebar() {
   const activeView = useUIStore((s) => s.activeView);
-  const setView = useUIStore((s) => s.setView);
+  const setView    = useUIStore((s) => s.setView);
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
-
-  // Live today-count badge
   const [todayCount, setTodayCount] = useState(0);
+
   useEffect(() => {
-    const refresh = async () => {
-      const tasks = await TaskRepository.getToday();
-      setTodayCount(tasks.filter((t) => t.status !== 'done').length);
-    };
-    refresh();
-    // Re-check every time the view changes (task may have been added/completed)
+    TaskRepository.getToday().then((tasks) =>
+      setTodayCount(tasks.filter((t) => t.status !== 'done').length)
+    );
   }, [activeView]);
 
   return (
-    <aside
-      className="w-56 flex-shrink-0 flex flex-col h-full border-r"
-      style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
-    >
+    <aside style={{
+      width: 220,
+      flexShrink: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      borderRight: '1px solid var(--border-default)',
+      background: 'var(--bg-surface)',
+    }}>
       {/* Logo */}
-      <div className="px-5 py-5 flex items-center gap-2">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
-          style={{ background: 'var(--accent)', color: '#fff' }}
-        >
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '20px 16px 16px',
+      }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: 8,
+          background: 'var(--accent)', color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 13, fontWeight: 700, flexShrink: 0,
+        }}>
           Q
         </div>
-        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
           Quick Todo
         </span>
       </div>
 
-      {/* Quick Add button */}
-      <div className="px-3 pb-4">
+      {/* Add Task button */}
+      <div style={{ padding: '0 12px 16px' }}>
         <button
           onClick={openQuickAdd}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
-          style={{ background: 'var(--accent)', color: '#fff' }}
+          style={{
+            width: '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '9px 12px',
+            borderRadius: 9, border: 'none',
+            background: 'var(--accent)', color: '#fff',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            transition: 'background 0.15s',
+          }}
           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
         >
-          <Plus size={16} strokeWidth={2.5} />
+          <Plus size={15} strokeWidth={2.5} />
           Add Task
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-2">
+      {/* Nav items */}
+      <nav style={{ flex: 1, padding: '0 8px' }}>
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-          const isActive = activeView === id;
+          const active = activeView === id;
           return (
             <button
               key={id}
               onClick={() => setView(id)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm mb-0.5 transition-colors cursor-pointer text-left"
               style={{
-                background: isActive ? 'var(--accent-soft)' : 'transparent',
-                color: isActive ? 'var(--accent)' : 'var(--text-sub)',
-                fontWeight: isActive ? 600 : 400,
+                width: '100%',
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px',
+                marginBottom: 2,
+                borderRadius: 8, border: 'none',
+                background: active ? 'var(--accent-soft)' : 'transparent',
+                color: active ? 'var(--accent)' : 'var(--text-sub)',
+                fontSize: 13, fontWeight: active ? 600 : 400,
+                cursor: 'pointer', textAlign: 'left',
+                transition: 'background 0.12s, color 0.12s',
               }}
+              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
             >
-              <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
+              <Icon size={15} strokeWidth={active ? 2.5 : 2} />
               <span style={{ flex: 1 }}>{label}</span>
 
-              {/* Badge for Today count */}
+              {/* Today count badge */}
               {id === 'today' && todayCount > 0 && (
                 <span style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                  padding: '2px 5px',
-                  borderRadius: 20,
-                  background: isActive ? 'var(--accent)' : 'var(--bg-elevated)',
-                  color: isActive ? '#fff' : 'var(--text-sub)',
-                  minWidth: 16,
-                  textAlign: 'center',
+                  fontSize: 10, fontWeight: 700,
+                  padding: '2px 6px', borderRadius: 20,
+                  background: active ? 'var(--accent)' : 'var(--bg-elevated)',
+                  color: active ? '#fff' : 'var(--text-sub)',
+                  minWidth: 18, textAlign: 'center',
                 }}>
                   {todayCount > 99 ? '99+' : todayCount}
                 </span>
