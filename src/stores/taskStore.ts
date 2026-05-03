@@ -27,7 +27,7 @@ interface TaskState {
   resetFilter: () => void;
 }
 
-const DEFAULT_FILTER: FilterState = { tags: [], search: '' };
+const DEFAULT_FILTER: FilterState = { tags: [], search: '', sortBy: 'createdAt', sortDir: 'desc' };
 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],

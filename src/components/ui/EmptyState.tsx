@@ -17,21 +17,10 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       gap: 12,
     }}>
       <div style={{ fontSize: 48, lineHeight: 1 }}>{icon}</div>
-      <h3 style={{
-        fontSize: 15,
-        fontWeight: 600,
-        color: 'var(--text-primary)',
-        margin: 0,
-      }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
         {title}
       </h3>
-      <p style={{
-        fontSize: 13,
-        color: 'var(--text-sub)',
-        margin: 0,
-        maxWidth: 280,
-        lineHeight: 1.5,
-      }}>
+      <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0, maxWidth: 280, lineHeight: 1.5 }}>
         {subtitle}
       </p>
       {action && <div style={{ marginTop: 8 }}>{action}</div>}

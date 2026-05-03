@@ -55,8 +55,9 @@ export const TaskRepository = {
       .sortBy('dueDate');
   },
 
-  /** Filtered query used by the "All" view */
+  /** Filtered + sorted query used by the "All" view */
   async getFiltered(filter: FilterState): Promise<Task[]> {
+    // Base collection — always ordered by createdAt desc as default
     let collection = db.tasks.orderBy('createdAt').reverse();
 
     if (filter.priority) {
@@ -78,7 +79,27 @@ export const TaskRepository = {
       );
     }
 
-    return collection.toArray();
+    const results = await collection.toArray();
+
+    // Apply sort in-memory (Dexie can only sort by indexed field as primary order)
+    const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, low: 2, none: 3 };
+
+    results.sort((a, b) => {
+      let cmp = 0;
+      if (filter.sortBy === 'priority') {
+        cmp = (PRIORITY_RANK[a.priority] ?? 3) - (PRIORITY_RANK[b.priority] ?? 3);
+      } else if (filter.sortBy === 'dueDate') {
+        const ad = a.dueDate ?? '9999-99-99';
+        const bd = b.dueDate ?? '9999-99-99';
+        cmp = ad < bd ? -1 : ad > bd ? 1 : 0;
+      } else {
+        // createdAt
+        cmp = a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0;
+      }
+      return filter.sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return results;
   },
 
   // ── Write ───────────────────────────────────────────────────────────────
