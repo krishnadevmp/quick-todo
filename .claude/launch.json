@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "design-preview", "-p", "3456", "--no-clipboard"],
       "port": 3456
+    },
+    {
+      "name": "quick-todo-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5173"],
+      "port": 5173
     }
   ]
 }
