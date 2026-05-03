@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { CalendarDays, Calendar, LayoutList, BarChart2, Settings, Plus } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
+import { TaskRepository } from '@/db/taskRepository';
 import type { ViewId } from '@/types';
 
 const NAV_ITEMS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
@@ -14,6 +16,17 @@ export default function Sidebar() {
   const activeView = useUIStore((s) => s.activeView);
   const setView = useUIStore((s) => s.setView);
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
+
+  // Live today-count badge
+  const [todayCount, setTodayCount] = useState(0);
+  useEffect(() => {
+    const refresh = async () => {
+      const tasks = await TaskRepository.getToday();
+      setTodayCount(tasks.filter((t) => t.status !== 'done').length);
+    };
+    refresh();
+    // Re-check every time the view changes (task may have been added/completed)
+  }, [activeView]);
 
   return (
     <aside
@@ -63,7 +76,24 @@ export default function Sidebar() {
               }}
             >
               <Icon size={16} strokeWidth={isActive ? 2.5 : 2} />
-              {label}
+              <span style={{ flex: 1 }}>{label}</span>
+
+              {/* Badge for Today count */}
+              {id === 'today' && todayCount > 0 && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  padding: '2px 5px',
+                  borderRadius: 20,
+                  background: isActive ? 'var(--accent)' : 'var(--bg-elevated)',
+                  color: isActive ? '#fff' : 'var(--text-sub)',
+                  minWidth: 16,
+                  textAlign: 'center',
+                }}>
+                  {todayCount > 99 ? '99+' : todayCount}
+                </span>
+              )}
             </button>
           );
         })}
