@@ -28,6 +28,16 @@ export const TaskRepository = {
       .sortBy('createdAt');
   },
 
+  /** Tasks past their due date that are not done */
+  async getOverdue(): Promise<Task[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    return db.tasks
+      .where('dueDate')
+      .below(today)
+      .filter((t) => t.status !== 'done')
+      .sortBy('dueDate');
+  },
+
   /** Tasks due in the next N days (default 7), excluding today, not done */
   async getUpcoming(days = 7): Promise<Task[]> {
     const today = new Date();

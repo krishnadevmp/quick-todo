@@ -5,6 +5,7 @@ import { TaskRepository } from '@/db/taskRepository';
 interface TaskState {
   // ── Data ──────────────────────────────────────────────────────────────
   tasks: Task[];
+  overdueTasks: Task[];
   isLoading: boolean;
   error: string | null;
 
@@ -30,6 +31,7 @@ const DEFAULT_FILTER: FilterState = { tags: [], search: '' };
 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
+  overdueTasks: [],
   isLoading: false,
   error: null,
   filter: DEFAULT_FILTER,
@@ -57,8 +59,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   loadUpcoming: async () => {
     set({ isLoading: true, error: null });
     try {
-      const tasks = await TaskRepository.getUpcoming();
-      set({ tasks, isLoading: false });
+      const [tasks, overdueTasks] = await Promise.all([
+        TaskRepository.getUpcoming(),
+        TaskRepository.getOverdue(),
+      ]);
+      set({ tasks, overdueTasks, isLoading: false });
     } catch (e) {
       set({ error: String(e), isLoading: false });
     }
@@ -101,7 +106,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   deleteTask: async (id) => {
     await TaskRepository.delete(id);
-    set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
+    set((s) => ({
+      tasks: s.tasks.filter((t) => t.id !== id),
+      overdueTasks: s.overdueTasks.filter((t) => t.id !== id),
+    }));
   },
 
   setFilter: (partial) =>
