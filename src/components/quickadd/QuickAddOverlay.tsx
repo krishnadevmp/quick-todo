@@ -6,39 +6,64 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { parseInput } from '@/utils/parseInput';
 import type { Priority, Category, ReminderOffset, RecurringPattern } from '@/types';
 
-// ── Chip helpers ──────────────────────────────────────────────────────────
-
-const PRIORITIES: { value: Priority | ''; label: string; color: string }[] = [
-  { value: '',       label: 'Priority',    color: 'var(--text-sub)' },
-  { value: 'high',   label: '🔴 High',     color: 'var(--priority-high)' },
-  { value: 'medium', label: '🟡 Medium',   color: 'var(--priority-medium)' },
-  { value: 'low',    label: '⬜ Low',      color: 'var(--priority-low)' },
+const PRIORITIES: { value: Priority | ''; label: string }[] = [
+  { value: '',       label: 'No priority' },
+  { value: 'high',   label: '🔴 High'    },
+  { value: 'medium', label: '🟡 Medium'  },
+  { value: 'low',    label: '⬜ Low'     },
 ];
 
 const CATEGORIES: { value: Category | ''; label: string }[] = [
-  { value: '',          label: 'Category'   },
-  { value: 'work',      label: '💼 Work'    },
-  { value: 'personal',  label: '👤 Personal'},
-  { value: 'project',   label: '🚀 Project' },
-  { value: 'routine',   label: '🔁 Routine' },
+  { value: '',          label: 'No category' },
+  { value: 'work',      label: '💼 Work'     },
+  { value: 'personal',  label: '👤 Personal' },
+  { value: 'project',   label: '🚀 Project'  },
+  { value: 'routine',   label: '🔁 Routine'  },
 ];
 
 const REMINDERS: { value: ReminderOffset; label: string }[] = [
-  { value: 'none', label: "Don't remind"   },
-  { value: 'at',   label: 'At due time'    },
-  { value: '15',   label: '15 min before'  },
-  { value: '30',   label: '30 min before'  },
-  { value: '60',   label: '1 hour before'  },
-  { value: '1440', label: '1 day before'   },
+  { value: 'none', label: "Don't remind"  },
+  { value: 'at',   label: 'At due time'   },
+  { value: '15',   label: '15 min before' },
+  { value: '30',   label: '30 min before' },
+  { value: '60',   label: '1 hour before' },
+  { value: '1440', label: '1 day before'  },
 ];
 
 const RECURRING: { value: RecurringPattern; label: string }[] = [
-  { value: 'none',      label: "Doesn't repeat" },
-  { value: 'daily',     label: 'Daily'           },
-  { value: 'weekdays',  label: 'Weekdays'        },
-  { value: 'weekly',    label: 'Weekly'          },
-  { value: 'monthly',   label: 'Monthly'         },
+  { value: 'none',     label: "Doesn't repeat" },
+  { value: 'daily',    label: 'Daily'          },
+  { value: 'weekdays', label: 'Weekdays'       },
+  { value: 'weekly',   label: 'Weekly'         },
+  { value: 'monthly',  label: 'Monthly'        },
 ];
+
+// ── Shared field styles ───────────────────────────────────────────────────
+
+const fieldLabel: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-sub)',
+  marginBottom: 6,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const fieldControl: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border-default)',
+  borderRadius: 8,
+  padding: '8px 10px',
+  fontSize: 13,
+  outline: 'none',
+  cursor: 'pointer',
+  boxSizing: 'border-box',
+};
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -58,20 +83,14 @@ export default function QuickAddOverlay() {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
 
-  // Escape key closes overlay
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeQuickAdd();
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeQuickAdd(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [closeQuickAdd]);
 
-  // Parse inline shortcuts as user types
   const handleTitleChange = (raw: string) => {
     setTitle(raw);
     const parsed = parseInput(raw);
@@ -85,7 +104,6 @@ export default function QuickAddOverlay() {
     const parsed = parseInput(title);
     const cleanTitle = parsed.title || title.trim();
     if (!cleanTitle) return;
-
     setIsSubmitting(true);
     try {
       await addTask({
@@ -104,58 +122,61 @@ export default function QuickAddOverlay() {
     }
   }, [title, priority, category, dueDate, reminderOffset, recurring, addTask, closeQuickAdd]);
 
-  // Cmd/Ctrl+Enter submits
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit();
-    };
+    const handler = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleSubmit]);
 
-  const selectStyle = {
-    background: 'var(--bg-elevated)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border-default)',
-    borderRadius: 'var(--radius-sm)',
-    padding: '6px 10px',
-    fontSize: '13px',
-    outline: 'none',
-    cursor: 'pointer',
-    width: '100%',
-  };
-
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'var(--bg-overlay)' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 20,
+        background: 'var(--bg-overlay)',
+      }}
       onClick={(e) => e.target === e.currentTarget && closeQuickAdd()}
     >
       {/* Panel */}
-      <div
-        className="w-full max-w-lg rounded-xl shadow-2xl overflow-hidden"
-        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 py-4 border-b"
-          style={{ borderColor: 'var(--border-default)' }}
-        >
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 520,
+        borderRadius: 16,
+        overflow: 'hidden',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-default)',
+      }}>
+
+        {/* ── Header ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-default)',
+        }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
             New Task
-          </h2>
+          </span>
           <button
             onClick={closeQuickAdd}
-            className="w-6 h-6 flex items-center justify-center rounded-md transition-colors cursor-pointer"
-            style={{ color: 'var(--text-sub)' }}
+            style={{
+              width: 28, height: 28, borderRadius: 8, border: 'none',
+              background: 'transparent', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--text-sub)',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
           >
-            <X size={14} />
+            <X size={15} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-5 py-4 space-y-4">
+        {/* ── Body ── */}
+        <div style={{ padding: '20px 20px 16px' }}>
+
           {/* Title input */}
           <input
             ref={inputRef}
@@ -163,113 +184,115 @@ export default function QuickAddOverlay() {
             onChange={(e) => handleTitleChange(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
             placeholder="Task title — try: Buy milk !high due:tomorrow #groceries"
-            className="w-full text-sm outline-none bg-transparent"
             style={{
-              color: 'var(--text-primary)',
-              caretColor: 'var(--accent)',
-              padding: '4px 0',
+              width: '100%', boxSizing: 'border-box',
+              background: 'transparent', border: 'none', outline: 'none',
+              fontSize: 15, fontWeight: 500,
+              color: 'var(--text-primary)', caretColor: 'var(--accent)',
+              padding: '0 0 12px 0',
+              borderBottom: '1px solid var(--border-default)',
+              marginBottom: 14,
             }}
           />
 
           {/* Shortcut hint */}
-          <p className="text-xs" style={{ color: 'var(--text-placeholder)' }}>
-            Shortcuts: <code style={{ background: 'var(--bg-chip)', padding: '1px 4px', borderRadius: 3 }}>#tag</code>{' '}
-            <code style={{ background: 'var(--bg-chip)', padding: '1px 4px', borderRadius: 3 }}>!high</code>{' '}
-            <code style={{ background: 'var(--bg-chip)', padding: '1px 4px', borderRadius: 3 }}>due:tomorrow</code>{' '}
-            <code style={{ background: 'var(--bg-chip)', padding: '1px 4px', borderRadius: 3 }}>@work</code>{' '}
-            <code style={{ background: 'var(--bg-chip)', padding: '1px 4px', borderRadius: 3 }}>every:week</code>
-          </p>
-
-          {/* Divider */}
-          <hr style={{ borderColor: 'var(--border-default)' }} />
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center',
+            marginBottom: 20,
+          }}>
+            <span style={{ fontSize: 11, color: 'var(--text-placeholder)' }}>Shortcuts:</span>
+            {['#tag', '!high', 'due:tomorrow', '@work', 'every:week'].map((s) => (
+              <code key={s} style={{
+                background: 'var(--bg-chip)', color: 'var(--text-sub)',
+                padding: '2px 6px', borderRadius: 4, fontSize: 11,
+              }}>{s}</code>
+            ))}
+          </div>
 
           {/* Field grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 14px',
+          }}>
             {/* Priority */}
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-sub)' }}>
-                <Flag size={12} /> Priority
-              </label>
-              <select value={priority} onChange={(e) => setPriority(e.target.value as Priority | '')} style={selectStyle}>
-                {PRIORITIES.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
+            <div>
+              <div style={fieldLabel}><Flag size={11} /> Priority</div>
+              <select value={priority} onChange={(e) => setPriority(e.target.value as Priority | '')} style={fieldControl}>
+                {PRIORITIES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
 
             {/* Category */}
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-sub)' }}>
-                <Tag size={12} /> Category
-              </label>
-              <select value={category} onChange={(e) => setCategory(e.target.value as Category | '')} style={selectStyle}>
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
+            <div>
+              <div style={fieldLabel}><Tag size={11} /> Category</div>
+              <select value={category} onChange={(e) => setCategory(e.target.value as Category | '')} style={fieldControl}>
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
             </div>
 
             {/* Due date */}
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-sub)' }}>
-                <Calendar size={12} /> Due date
-              </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                style={{ ...selectStyle, colorScheme: 'dark' }}
-              />
+            <div>
+              <div style={fieldLabel}><Calendar size={11} /> Due date</div>
+              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                style={{ ...fieldControl, colorScheme: 'dark' }} />
             </div>
 
             {/* Remind me */}
-            <div className="space-y-1">
-              <label className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-sub)' }}>
-                <Bell size={12} /> Remind me
-              </label>
-              <select value={reminderOffset} onChange={(e) => setReminderOffset(e.target.value as ReminderOffset)} style={selectStyle}>
-                {REMINDERS.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
+            <div>
+              <div style={fieldLabel}><Bell size={11} /> Remind me</div>
+              <select value={reminderOffset} onChange={(e) => setReminderOffset(e.target.value as ReminderOffset)} style={fieldControl}>
+                {REMINDERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
-              <p className="text-xs" style={{ color: 'var(--text-placeholder)' }}>Fires relative to due date</p>
+              <p style={{ fontSize: 11, color: 'var(--text-placeholder)', marginTop: 5 }}>
+                Fires relative to due date
+              </p>
             </div>
 
-            {/* Recurring */}
-            <div className="space-y-1 col-span-2">
-              <label className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-sub)' }}>
-                <RefreshCw size={12} /> Repeat
-              </label>
-              <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={selectStyle}>
-                {RECURRING.map((r) => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
-                ))}
+            {/* Repeat — full width */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
+              <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
+                {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div
-          className="flex items-center justify-between px-5 py-3 border-t"
-          style={{ borderColor: 'var(--border-default)', background: 'var(--bg-elevated)' }}
-        >
-          <p className="text-xs" style={{ color: 'var(--text-placeholder)' }}>
-            Press <kbd style={{ background: 'var(--bg-chip)', padding: '1px 5px', borderRadius: 3, fontSize: 11 }}>Enter</kbd> to add
-          </p>
-          <div className="flex gap-2">
+        {/* ── Footer ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 20px',
+          borderTop: '1px solid var(--border-default)',
+          background: 'var(--bg-elevated)',
+        }}>
+          <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>
+            Press{' '}
+            <kbd style={{
+              background: 'var(--bg-chip)', color: 'var(--text-sub)',
+              padding: '1px 6px', borderRadius: 4, fontSize: 11,
+            }}>Enter</kbd>
+            {' '}to save
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={closeQuickAdd}
-              className="px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer"
-              style={{ color: 'var(--text-sub)', background: 'transparent' }}
+              style={{
+                padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border-default)',
+                background: 'transparent', color: 'var(--text-sub)',
+                fontSize: 13, cursor: 'pointer',
+              }}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!title.trim() || isSubmitting}
-              className="px-4 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
-              style={{ background: 'var(--accent)', color: '#fff' }}
+              style={{
+                padding: '7px 16px', borderRadius: 8, border: 'none',
+                background: title.trim() ? 'var(--accent)' : 'var(--bg-chip)',
+                color: title.trim() ? '#fff' : 'var(--text-placeholder)',
+                fontSize: 13, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default',
+                transition: 'all 0.15s ease',
+              }}
             >
               {isSubmitting ? 'Adding…' : 'Add Task'}
             </button>

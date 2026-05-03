@@ -11,19 +11,19 @@ export default function Layout() {
   const activeView = useUIStore((s) => s.activeView);
 
   const views = {
-    today: <TodayView />,
-    upcoming: <UpcomingView />,
-    all: <AllView />,
+    today:     <TodayView />,
+    upcoming:  <UpcomingView />,
+    all:       <AllView />,
     dashboard: <DashboardView />,
-    settings: <SettingsView />,
+    settings:  <SettingsView />,
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden', background: 'var(--bg-base)' }}>
       <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
           {views[activeView]}
         </main>
       </div>

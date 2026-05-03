@@ -316,8 +316,12 @@ export default function FilterBar({ allTags }: FilterBarProps) {
         )}
       </div>
 
-      {/* Filter chips row */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+      {/* Filter chips row — scrollable horizontally on narrow viewports */}
+      <div style={{
+        display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 6,
+        overflowX: 'auto', paddingBottom: 2,
+        scrollbarWidth: 'none',
+      }}>
         {/* Priority chips */}
         {PRIORITIES.map((p) => (
           <Chip
