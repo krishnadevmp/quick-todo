@@ -80,11 +80,16 @@ export interface ParsedInput {
 
 export type ViewId = 'today' | 'upcoming' | 'all' | 'dashboard' | 'settings';
 
+export type SortBy = 'createdAt' | 'dueDate' | 'priority';
+export type SortDir = 'asc' | 'desc';
+
 export interface FilterState {
   priority?: Priority;
   category?: Category;
   tags: string[];
   search: string;
+  sortBy: SortBy;
+  sortDir: SortDir;
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────
