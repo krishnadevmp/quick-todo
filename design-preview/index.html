@@ -196,26 +196,53 @@
       box-shadow: var(--shadow-sm);
       transition: transform .1s, box-shadow .1s;
       display: flex; gap: 12px; align-items: flex-start;
+      position: relative; overflow: hidden;
     }
     .task-card:hover { transform: translateX(2px); box-shadow: var(--shadow-md); }
     .task-card.overdue { border-color: rgba(239,68,68,.25); }
     .task-card.done { opacity: .55; }
 
-    .priority-bar-high   { box-shadow: inset 3px 0 0 #ef4444, var(--shadow-sm); }
-    .priority-bar-medium { box-shadow: inset 3px 0 0 #eab308, var(--shadow-sm); }
-    .priority-bar-low    { box-shadow: inset 3px 0 0 #6b7280, var(--shadow-sm); }
-
-    /* ── Task checkbox ── */
-    .task-check {
-      width: 20px; height: 20px; border-radius: 50%;
-      border: 2px solid var(--border); flex-shrink: 0; margin-top: 2px;
-      display: flex; align-items: center; justify-content: center;
-      transition: border-color .15s, background .15s;
+    /* Priority bar — pseudo-element, fully independent of box-shadow so hover never hides it */
+    .task-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px; border-radius: 0 3px 3px 0;
+      background: transparent;
+      transition: background .15s;
     }
-    .task-check:hover { border-color: #3b82f6; }
-    .task-check.in-progress { border-color: #eab308; background: rgba(234,179,8,.1); }
-    .task-check.in-progress::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: block; }
-    .task-check.done { border-color: #22c55e; background: #22c55e; }
+    .priority-bar-high::before   { background: #ef4444; }
+    .priority-bar-medium::before { background: #eab308; }
+    .priority-bar-low::before    { background: #6b7280; }
+
+    /* ── Status toggle (left circle) ── */
+    /* Shows task state: Todo / In Progress / Done. Click to advance. */
+    .task-check {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--border); flex-shrink: 0; margin-top: 1px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, background .15s, transform .1s;
+      position: relative;
+    }
+    /* Tooltip label so the purpose is clear */
+    .task-check::after {
+      content: 'Mark done';
+      position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: #0f172a; color: #f8fafc;
+      font-size: 10px; font-weight: 500; white-space: nowrap;
+      padding: 3px 8px; border-radius: 6px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s;
+    }
+    .task-check:hover::after { opacity: 1; }
+    .task-check:hover { border-color: #3b82f6; transform: scale(1.1); }
+    /* In Progress state — yellow ring + centre dot */
+    .task-check.in-progress { border-color: #eab308; border-width: 2px; }
+    .task-check.in-progress .check-dot { width: 8px; height: 8px; border-radius: 50%; background: #eab308; display: block; }
+    .task-check.in-progress::after { content: 'In progress'; }
+    /* Done state — solid green + checkmark */
+    .task-check.done { border-color: #22c55e; background: #22c55e; border-width: 2px; }
+    .task-check.done::after { content: 'Completed'; }
 
     .task-body { flex: 1; min-width: 0; }
     .task-title { font-size: 13px; font-weight: 500; color: var(--text-base); line-height: 1.4; }
@@ -223,30 +250,30 @@
     .task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
     .task-right { flex-shrink: 0; }
 
-    /* ── Category badges ── */
+    /* ── Badges ── */
     .badge {
       display: inline-flex; align-items: center; gap: 3px;
       padding: 2px 7px; border-radius: 6px;
       font-size: 11px; font-weight: 500;
     }
-    [data-theme="light"] .badge-work    { background: #dbeafe; color: #1d4ed8; }
-    [data-theme="light"] .badge-personal{ background: #dcfce7; color: #15803d; }
-    [data-theme="light"] .badge-project { background: #f3e8ff; color: #7e22ce; }
-    [data-theme="light"] .badge-routine { background: #ffedd5; color: #c2410c; }
-    [data-theme="light"] .badge-high    { background: #fee2e2; color: #dc2626; }
-    [data-theme="light"] .badge-medium  { background: #fef9c3; color: #b45309; }
-    [data-theme="light"] .badge-status  { background: #fef9c3; color: #b45309; }
 
-    [data-theme="dark"] .badge-work    { background: #172554; color: #93c5fd; }
-    [data-theme="dark"] .badge-personal{ background: #052e16; color: #86efac; }
-    [data-theme="dark"] .badge-project { background: #2e1065; color: #d8b4fe; }
-    [data-theme="dark"] .badge-routine { background: #431407; color: #fb923c; }
-    [data-theme="dark"] .badge-high    { background: #450a0a; color: #fca5a5; }
-    [data-theme="dark"] .badge-medium  { background: #422006; color: #fcd34d; }
-    [data-theme="dark"] .badge-status  { background: #422006; color: #fcd34d; }
+    /* Category badges — neutral, colour carries no meaning here */
+    .badge-work, .badge-personal, .badge-project, .badge-routine {
+      background: var(--bg-chip);
+      color: var(--text-sub);
+    }
+
+    /* Priority badges — only these use colour, colour = urgency */
+    [data-theme="light"] .badge-high   { background: #fee2e2; color: #dc2626; }
+    [data-theme="light"] .badge-medium { background: #fef9c3; color: #b45309; }
+    [data-theme="light"] .badge-status { background: #f1f5f9; color: #64748b; }
+
+    [data-theme="dark"] .badge-high   { background: #450a0a; color: #fca5a5; }
+    [data-theme="dark"] .badge-medium { background: #422006; color: #fcd34d; }
+    [data-theme="dark"] .badge-status { background: #1e293b; color: #94a3b8; }
 
     .badge-overdue { font-size: 11px; color: #ef4444; display: flex; align-items: center; gap: 3px; }
-    .badge-repeat  { font-size: 12px; color: #f97316; }
+    .badge-repeat  { font-size: 12px; color: var(--text-muted); }
     .badge-bell    { font-size: 11px; color: var(--text-muted); }
 
     .meta-date { font-size: 11px; color: var(--text-sub); display: flex; align-items: center; gap: 3px; }
@@ -458,6 +485,7 @@
 
     .overlay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .overlay-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; }
+    .field-hint { display: block; font-size: 10px; color: var(--text-faint); margin-top: 5px; }
     .overlay-field select, .overlay-field input[type="date"], .overlay-field input[type="time"] {
       width: 100%; background: var(--bg-input); color: var(--text-base);
       border: 1px solid var(--border); border-radius: 10px;
@@ -546,10 +574,10 @@
       </div>
       <div class="filter-row">
         <button class="chip active">All <span style="opacity:.7">12</span></button>
-        <button class="chip"><span class="chip-dot" style="background:#3b82f6"></span>Work <span style="opacity:.7">4</span></button>
-        <button class="chip"><span class="chip-dot" style="background:#22c55e"></span>Personal <span style="opacity:.7">3</span></button>
-        <button class="chip"><span class="chip-dot" style="background:#a855f7"></span>Project <span style="opacity:.7">3</span></button>
-        <button class="chip"><span class="chip-dot" style="background:#f97316"></span>Routine <span style="opacity:.7">2</span></button>
+        <button class="chip">💼 Work <span style="opacity:.7">4</span></button>
+        <button class="chip">👤 Personal <span style="opacity:.7">3</span></button>
+        <button class="chip">🚀 Project <span style="opacity:.7">3</span></button>
+        <button class="chip">🔁 Routine <span style="opacity:.7">2</span></button>
       </div>
     </div>
 
@@ -572,7 +600,7 @@
       <div class="section-label"><span>Today</span><div class="section-line"></div><span class="section-date">May 2</span></div>
 
       <div class="task-card priority-bar-high">
-        <button class="task-check in-progress"></button>
+        <button class="task-check in-progress"><span class="check-dot"></span></button>
         <div class="task-body">
           <div class="task-title">Fix auth bug in API</div>
           <div class="task-meta">
@@ -1029,8 +1057,16 @@
         <input type="date"/>
       </div>
       <div class="overlay-field">
-        <label>Reminder</label>
-        <input type="time"/>
+        <label>Remind me</label>
+        <select>
+          <option value="">Don't remind</option>
+          <option value="at">At due time</option>
+          <option value="15">15 min before</option>
+          <option value="30" selected>30 min before</option>
+          <option value="60">1 hour before</option>
+          <option value="1440">1 day before</option>
+        </select>
+        <span class="field-hint">Fires relative to due date</span>
       </div>
     </div>
     <div class="overlay-actions">
