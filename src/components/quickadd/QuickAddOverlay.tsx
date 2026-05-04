@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Tag, Flag, Calendar, RefreshCw, Bell } from 'lucide-react';
+import { X, Tag, Flag, Calendar, Clock, RefreshCw, Bell } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -77,6 +77,7 @@ export default function QuickAddOverlay() {
   const [priority, setPriority] = useState<Priority | ''>(defaultPriority === 'none' ? '' : defaultPriority);
   const [category, setCategory] = useState<Category | ''>('');
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('11:00');
   const [reminderOffset, setReminderOffset] = useState<ReminderOffset>(defaultReminder);
   const [recurring, setRecurring] = useState<RecurringPattern>('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +113,7 @@ export default function QuickAddOverlay() {
         category: (category || parsed.category) as Category | undefined,
         status: 'todo',
         dueDate: dueDate || parsed.dueDate,
+        dueTime: (dueDate || parsed.dueDate) ? dueTime : undefined,
         reminderOffset,
         recurring: recurring || parsed.recurring || 'none',
         tags: parsed.tags,
@@ -120,7 +122,7 @@ export default function QuickAddOverlay() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [title, priority, category, dueDate, reminderOffset, recurring, addTask, closeQuickAdd]);
+  }, [title, priority, category, dueDate, dueTime, reminderOffset, recurring, addTask, closeQuickAdd]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit(); };
@@ -209,10 +211,9 @@ export default function QuickAddOverlay() {
             ))}
           </div>
 
-          {/* Field grid */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 14px',
-          }}>
+          {/* Field grid — 2 columns */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 14px' }}>
+
             {/* Priority */}
             <div>
               <div style={fieldLabel}><Flag size={11} /> Priority</div>
@@ -236,24 +237,39 @@ export default function QuickAddOverlay() {
                 style={{ ...fieldControl, colorScheme: 'dark' }} />
             </div>
 
+            {/* Due time */}
+            <div>
+              <div style={fieldLabel}><Clock size={11} /> Due time</div>
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                disabled={!dueDate}
+                style={{
+                  ...fieldControl,
+                  colorScheme: 'dark',
+                  opacity: dueDate ? 1 : 0.4,
+                  cursor: dueDate ? 'pointer' : 'not-allowed',
+                }}
+              />
+            </div>
+
             {/* Remind me */}
             <div>
               <div style={fieldLabel}><Bell size={11} /> Remind me</div>
               <select value={reminderOffset} onChange={(e) => setReminderOffset(e.target.value as ReminderOffset)} style={fieldControl}>
                 {REMINDERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
-              <p style={{ fontSize: 11, color: 'var(--text-placeholder)', marginTop: 5 }}>
-                Fires relative to due date
-              </p>
             </div>
 
-            {/* Repeat — full width */}
-            <div style={{ gridColumn: '1 / -1' }}>
+            {/* Repeat */}
+            <div>
               <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
               <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
                 {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
+
           </div>
         </div>
 

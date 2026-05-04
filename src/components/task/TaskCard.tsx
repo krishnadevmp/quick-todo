@@ -51,6 +51,14 @@ export default function TaskCard({ task }: TaskCardProps) {
   const dueDateLabel = formatDueDate(task.dueDate);
   const todayStr = new Date().toISOString().slice(0, 10);
 
+  const dueTimeLabel = (() => {
+    if (!task.dueTime) return '';
+    const [h, m] = task.dueTime.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour   = h % 12 || 12;
+    return ` · ${hour}:${m.toString().padStart(2, '0')} ${period}`;
+  })();
+
   const handleStatusClick = async () => {
     const next = NEXT_STATUS[task.status];
     if (next === 'done') {
@@ -176,7 +184,7 @@ export default function TaskCard({ task }: TaskCardProps) {
               background: overdue ? 'rgba(239,68,68,0.12)' : 'var(--bg-chip)',
               color: overdue ? 'var(--priority-high)' : task.dueDate === todayStr ? 'var(--accent)' : 'var(--text-sub)',
             }}>
-              <Calendar size={10} /> {dueDateLabel}
+              <Calendar size={10} /> {dueDateLabel}{dueTimeLabel}
             </span>
           )}
           {task.recurring !== 'none' && (
