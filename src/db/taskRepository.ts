@@ -231,20 +231,70 @@ export const TaskRepository = {
   // ── Stats (for dashboard) ────────────────────────────────────────────────
 
   async getStats() {
-    const all = await db.tasks.toArray();
-    const done = all.filter((t) => t.status === 'done');
+    const all   = await db.tasks.toArray();
+    const done  = all.filter((t) => t.status === 'done');
     const today = new Date().toISOString().slice(0, 10);
-    const dueToday = all.filter((t) => t.dueDate === today);
-    const overdue = all.filter(
-      (t) => t.dueDate && t.dueDate < today && t.status !== 'done'
-    );
+
+    const overdue        = all.filter((t) => t.dueDate && t.dueDate < today && t.status !== 'done');
+    const completedToday = done.filter((t) => t.completedAt?.startsWith(today));
+
+    // ── Priority breakdown ──────────────────────────────────────────────
+    const priorityBreakdown = { high: 0, medium: 0, low: 0, none: 0 };
+    for (const t of all) priorityBreakdown[t.priority]++;
+
+    // ── Category breakdown ──────────────────────────────────────────────
+    const categoryBreakdown = { work: 0, personal: 0, project: 0, routine: 0, uncategorized: 0 };
+    for (const t of all) {
+      const key = (t.category ?? 'uncategorized') as keyof typeof categoryBreakdown;
+      categoryBreakdown[key]++;
+    }
+
+    // ── Last 7 days completions (oldest → newest) ───────────────────────
+    const weeklyCompletions = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const date  = d.toISOString().slice(0, 10);
+      const count = done.filter((t) => t.completedAt?.startsWith(date)).length;
+      return { date, count };
+    });
+
+    // ── Streak (consecutive days with ≥1 completion) ────────────────────
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const date          = d.toISOString().slice(0, 10);
+      const hasCompletion = done.some((t) => t.completedAt?.startsWith(date));
+      if (hasCompletion) {
+        streak++;
+      } else if (i === 0) {
+        continue; // no completion today yet — check yesterday before breaking
+      } else {
+        break;
+      }
+    }
+
+    // ── Most productive day of week ─────────────────────────────────────
+    const dayCounts = [0, 0, 0, 0, 0, 0, 0]; // Sun=0 … Sat=6
+    for (const t of done) {
+      if (t.completedAt) dayCounts[new Date(t.completedAt).getDay()]++;
+    }
+    const DAY_NAMES     = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const maxDay        = Math.max(...dayCounts);
+    const mostProductiveDay = maxDay > 0 ? DAY_NAMES[dayCounts.indexOf(maxDay)] : null;
 
     return {
-      total: all.length,
-      completed: done.length,
-      dueToday: dueToday.length,
-      overdue: overdue.length,
-      completionRate: all.length ? Math.round((done.length / all.length) * 100) : 0,
+      total:              all.length,
+      completed:          done.length,
+      completedToday:     completedToday.length,
+      dueToday:           all.filter((t) => t.dueDate === today).length,
+      overdue:            overdue.length,
+      completionRate:     all.length ? Math.round((done.length / all.length) * 100) : 0,
+      priorityBreakdown,
+      categoryBreakdown,
+      weeklyCompletions,
+      streak,
+      mostProductiveDay,
     };
   },
 };

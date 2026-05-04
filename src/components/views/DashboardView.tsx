@@ -1,7 +1,247 @@
-export default function DashboardView() {
+import { useEffect, useState } from 'react';
+import { TaskRepository } from '@/db/taskRepository';
+
+// ── Types ─────────────────────────────────────────────────────────────────
+
+type Stats = Awaited<ReturnType<typeof TaskRepository.getStats>>;
+
+// ── Shared styles ─────────────────────────────────────────────────────────
+
+const card: React.CSSProperties = {
+  background: 'var(--bg-surface)',
+  border: '1px solid var(--border-default)',
+  borderRadius: 'var(--radius-md)',
+};
+
+const sectionTitle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 700,
+  color: 'var(--text-sub)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  marginBottom: 14,
+};
+
+// ── Sub-components ────────────────────────────────────────────────────────
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <p style={{ color: 'var(--text-sub)' }}>Stats and insights will appear here.</p>
+    <div style={{ marginBottom: 28 }}>
+      <h2 style={sectionTitle}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function StatCard({ value, label, color, suffix = '' }: {
+  value: number; label: string; color?: string; suffix?: string;
+}) {
+  return (
+    <div style={{ ...card, padding: '18px 20px' }}>
+      <div style={{
+        fontSize: 30, fontWeight: 700, lineHeight: 1,
+        color: color ?? 'var(--text-primary)', marginBottom: 6,
+      }}>
+        {value}{suffix}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-sub)' }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyChart({ data }: { data: Stats['weeklyCompletions'] }) {
+  const max      = Math.max(...data.map((d) => d.count), 1);
+  const BAR_H    = 80;
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  return (
+    <div style={{ ...card, padding: '20px 20px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+        {data.map(({ date, count }) => {
+          const filled  = Math.round((count / max) * BAR_H);
+          const isToday = date === todayStr;
+          const dayLabel = isToday
+            ? 'Today'
+            : new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+
+          return (
+            <div key={date} style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 6,
+            }}>
+              <span style={{
+                fontSize: 11, fontWeight: 600, height: 16, lineHeight: '16px',
+                color: count > 0 ? 'var(--accent)' : 'transparent',
+              }}>
+                {count > 0 ? count : '0'}
+              </span>
+
+              <div style={{ width: '100%', height: BAR_H, display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{
+                  width: '100%',
+                  height: filled || 3,
+                  borderRadius: 4,
+                  background: isToday
+                    ? 'var(--accent)'
+                    : count > 0 ? 'rgba(99,102,241,0.35)' : 'var(--bg-elevated)',
+                  border: count === 0 ? '1px solid var(--border-default)' : 'none',
+                  transition: 'height 0.3s ease',
+                }} />
+              </div>
+
+              <span style={{
+                fontSize: 11, whiteSpace: 'nowrap',
+                fontWeight: isToday ? 600 : 400,
+                color: isToday ? 'var(--accent)' : 'var(--text-placeholder)',
+              }}>
+                {dayLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BarRow({ label, count, total, color }: {
+  label: string; count: number; total: number; color: string;
+}) {
+  const pct = total > 0 ? (count / total) * 100 : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+      <span style={{ width: 80, fontSize: 12, color: 'var(--text-sub)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+        <div style={{
+          width: `${pct}%`, height: '100%', borderRadius: 4,
+          background: color, transition: 'width 0.45s ease',
+          minWidth: pct > 0 ? 4 : 0,
+        }} />
+      </div>
+      <span style={{ width: 22, fontSize: 12, color: 'var(--text-placeholder)', textAlign: 'right', flexShrink: 0 }}>
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function InsightCard({ emoji, value, label }: { emoji: string; value: string | number; label: string }) {
+  return (
+    <div style={{ ...card, padding: '20px 24px' }}>
+      <div style={{ fontSize: 28, marginBottom: 10, lineHeight: 1 }}>{emoji}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginBottom: 6 }}>
+        {value}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-sub)' }}>{label}</div>
+    </div>
+  );
+}
+
+// ── Main view ─────────────────────────────────────────────────────────────
+
+export default function DashboardView() {
+  const [stats, setStats]       = useState<Stats | null>(null);
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    TaskRepository.getStats()
+      .then(setStats)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: 200, color: 'var(--text-placeholder)', fontSize: 14,
+      }}>
+        Loading stats…
+      </div>
+    );
+  }
+
+  if (!stats || stats.total === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '64px 20px' }}>
+        <div style={{ fontSize: 44, marginBottom: 14 }}>📊</div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+          No data yet
+        </p>
+        <p style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+          Add and complete tasks to see your productivity stats.
+        </p>
+      </div>
+    );
+  }
+
+  const { priorityBreakdown: pb, categoryBreakdown: cb } = stats;
+
+  return (
+    <div style={{ maxWidth: 720 }}>
+
+      {/* Overview */}
+      <Section title="Overview">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <StatCard value={stats.total}          label="Total tasks" />
+          <StatCard value={stats.completedToday} label="Done today"      color="var(--accent)" />
+          <StatCard
+            value={stats.overdue}
+            label="Overdue"
+            color={stats.overdue > 0 ? 'var(--priority-high)' : undefined}
+          />
+          <StatCard value={stats.completionRate} label="Completion rate" color="var(--accent)" suffix="%" />
+        </div>
+      </Section>
+
+      {/* Last 7 days */}
+      <Section title="Last 7 days">
+        <WeeklyChart data={stats.weeklyCompletions} />
+      </Section>
+
+      {/* Priority + Category breakdown */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
+        <div>
+          <h2 style={sectionTitle}>By Priority</h2>
+          <div style={{ ...card, padding: '18px 20px' }}>
+            <BarRow label="🔴 High"   count={pb.high}   total={stats.total} color="var(--priority-high)"   />
+            <BarRow label="🟡 Medium" count={pb.medium} total={stats.total} color="var(--priority-medium)" />
+            <BarRow label="🟢 Low"    count={pb.low}    total={stats.total} color="var(--priority-low)"    />
+            <BarRow label="— None"    count={pb.none}   total={stats.total} color="var(--border-default)"  />
+          </div>
+        </div>
+
+        <div>
+          <h2 style={sectionTitle}>By Category</h2>
+          <div style={{ ...card, padding: '18px 20px' }}>
+            <BarRow label="💼 Work"     count={cb.work}         total={stats.total} color="var(--accent)"          />
+            <BarRow label="👤 Personal" count={cb.personal}     total={stats.total} color="var(--priority-low)"    />
+            <BarRow label="🚀 Project"  count={cb.project}      total={stats.total} color="var(--priority-medium)" />
+            <BarRow label="🔁 Routine"  count={cb.routine}      total={stats.total} color="var(--priority-high)"   />
+            {cb.uncategorized > 0 && (
+              <BarRow label="· Other"   count={cb.uncategorized} total={stats.total} color="var(--border-default)" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Insights */}
+      <Section title="Insights">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <InsightCard
+            emoji={stats.streak > 0 ? '🔥' : '💤'}
+            value={`${stats.streak} day${stats.streak !== 1 ? 's' : ''}`}
+            label="Current streak"
+          />
+          <InsightCard
+            emoji="📅"
+            value={stats.mostProductiveDay ?? '—'}
+            label="Most productive day"
+          />
+        </div>
+      </Section>
     </div>
   );
 }
