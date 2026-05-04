@@ -1,6 +1,10 @@
 import { db } from './schema';
-import type { Task, FilterState } from '@/types';
+import type { Task, FilterState, RecurringPattern } from '@/types';
 import { generateId } from '@/utils/generateId';
+import { getNextOccurrence } from '@/utils/recurringUtils';
+
+/** Fields that are shared across all tasks in a series (not per-occurrence) */
+type SeriesChanges = Partial<Omit<Task, 'id' | 'createdAt' | 'dueDate' | 'status' | 'completedAt' | 'recurringParentId'>>;
 
 // ── TaskRepository ─────────────────────────────────────────────────────────
 // All task persistence goes through this module.
@@ -120,13 +124,37 @@ export const TaskRepository = {
     await db.tasks.update(id, { ...changes, updatedAt: new Date().toISOString() });
   },
 
-  async complete(id: string): Promise<void> {
+  /**
+   * Mark a task done.  If the task has a recurring pattern, automatically
+   * creates the next occurrence and returns it.
+   */
+  async complete(id: string): Promise<{ nextTask?: Task }> {
+    const task = await db.tasks.get(id);
+    if (!task) return {};
+
     const now = new Date().toISOString();
-    await db.tasks.update(id, {
-      status: 'done',
-      completedAt: now,
-      updatedAt: now,
+    await db.tasks.update(id, { status: 'done', completedAt: now, updatedAt: now });
+
+    if (task.recurring === 'none') return {};
+
+    // Spawn the next occurrence
+    const nextDueDate = getNextOccurrence(task.dueDate, task.recurring as RecurringPattern);
+    const parentId    = task.recurringParentId ?? task.id;
+
+    const nextTask = await TaskRepository.create({
+      title:            task.title,
+      description:      task.description,
+      priority:         task.priority,
+      category:         task.category,
+      status:           'todo',
+      dueDate:          nextDueDate,
+      reminderOffset:   task.reminderOffset,
+      recurring:        task.recurring,
+      tags:             [...task.tags],
+      recurringParentId: parentId,
     });
+
+    return { nextTask };
   },
 
   async delete(id: string): Promise<void> {
@@ -145,6 +173,58 @@ export const TaskRepository = {
   /** All tasks that belong to a recurring series */
   async getByRecurringParent(parentId: string): Promise<Task[]> {
     return db.tasks.where('recurringParentId').equals(parentId).toArray();
+  },
+
+  /**
+   * Update metadata on every pending (non-done) task in a recurring series.
+   * dueDate is intentionally excluded — each occurrence keeps its own date.
+   */
+  async updateSeries(id: string, changes: SeriesChanges): Promise<void> {
+    const task = await db.tasks.get(id);
+    if (!task) return;
+
+    const now      = new Date().toISOString();
+    const parentId = task.recurringParentId ?? task.id;
+
+    // Update this task
+    await db.tasks.update(id, { ...changes, updatedAt: now });
+
+    // Update every pending sibling
+    const siblings = await db.tasks
+      .where('recurringParentId')
+      .equals(parentId)
+      .toArray();
+
+    for (const sibling of siblings) {
+      if (sibling.id !== id && sibling.status !== 'done') {
+        await db.tasks.update(sibling.id, { ...changes, updatedAt: now });
+      }
+    }
+  },
+
+  /**
+   * Set recurring = 'none' on the given task and all pending siblings in the
+   * same series so no further occurrences are generated.
+   */
+  async stopRecurring(id: string): Promise<void> {
+    const task = await db.tasks.get(id);
+    if (!task) return;
+
+    const now      = new Date().toISOString();
+    const parentId = task.recurringParentId ?? task.id;
+
+    await db.tasks.update(id, { recurring: 'none', updatedAt: now });
+
+    const siblings = await db.tasks
+      .where('recurringParentId')
+      .equals(parentId)
+      .toArray();
+
+    for (const sibling of siblings) {
+      if (sibling.id !== id && sibling.status !== 'done') {
+        await db.tasks.update(sibling.id, { recurring: 'none', updatedAt: now });
+      }
+    }
   },
 
   // ── Stats (for dashboard) ────────────────────────────────────────────────
