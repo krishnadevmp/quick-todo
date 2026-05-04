@@ -142,15 +142,16 @@ export const TaskRepository = {
     const parentId    = task.recurringParentId ?? task.id;
 
     const nextTask = await TaskRepository.create({
-      title:            task.title,
-      description:      task.description,
-      priority:         task.priority,
-      category:         task.category,
-      status:           'todo',
-      dueDate:          nextDueDate,
-      reminderOffset:   task.reminderOffset,
-      recurring:        task.recurring,
-      tags:             [...task.tags],
+      title:             task.title,
+      description:       task.description,
+      priority:          task.priority,
+      category:          task.category,
+      status:            'todo',
+      dueDate:           nextDueDate,
+      dueTime:           task.dueTime,
+      reminderOffset:    task.reminderOffset,
+      recurring:         task.recurring,
+      tags:              [...task.tags],
       recurringParentId: parentId,
     });
 

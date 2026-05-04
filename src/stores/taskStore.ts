@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import type { Task, FilterState } from '@/types';
 import { TaskRepository } from '@/db/taskRepository';
+import {
+  scheduleNotification,
+  cancelNotification,
+  rescheduleNotification,
+} from '@/utils/notificationScheduler';
 
 type SeriesChanges = Partial<Omit<Task, 'id' | 'createdAt' | 'dueDate' | 'status' | 'completedAt' | 'recurringParentId'>>;
 
@@ -86,16 +91,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   addTask: async (partial) => {
     const task = await TaskRepository.create(partial);
     set((s) => ({ tasks: [task, ...s.tasks] }));
+    scheduleNotification(task);
     return task;
   },
 
   updateTask: async (id, changes) => {
     await TaskRepository.update(id, changes);
+    const now = new Date().toISOString();
     set((s) => ({
       tasks: s.tasks.map((t) =>
-        t.id === id ? { ...t, ...changes, updatedAt: new Date().toISOString() } : t
+        t.id === id ? { ...t, ...changes, updatedAt: now } : t
       ),
     }));
+    const updated = get().tasks.find((t) => t.id === id);
+    if (updated) rescheduleNotification(updated);
   },
 
   completeTask: async (id) => {
@@ -109,6 +118,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         t.id === id ? { ...t, status: 'done' as const, completedAt: now, updatedAt: now } : t
       ),
     }));
+    cancelNotification(id);
+    if (nextTask) scheduleNotification(nextTask);
     return nextTask;
   },
 
@@ -118,6 +129,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       tasks: s.tasks.filter((t) => t.id !== id),
       overdueTasks: s.overdueTasks.filter((t) => t.id !== id),
     }));
+    cancelNotification(id);
   },
 
   stopRecurring: async (id) => {
@@ -147,6 +159,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           : t;
       return { tasks: s.tasks.map(patch), overdueTasks: s.overdueTasks.map(patch) };
     });
+    // Reschedule notifications for all affected in-memory tasks
+    const { tasks } = get();
+    const root = tasks.find((t) => t.id === id);
+    if (root) {
+      const parentId = root.recurringParentId ?? id;
+      tasks
+        .filter((t) => t.id === id || t.recurringParentId === parentId)
+        .forEach(rescheduleNotification);
+    }
   },
 
   setFilter: (partial) =>

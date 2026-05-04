@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Tag, Flag, Calendar, RefreshCw, Bell, StopCircle } from 'lucide-react';
+import { X, Tag, Flag, Calendar, Clock, RefreshCw, Bell, StopCircle } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { toast } from '@/components/ui/Toast';
@@ -66,6 +66,7 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
   const [priority, setPriority]         = useState<Priority | ''>(task.priority === 'none' ? '' : task.priority);
   const [category, setCategory]         = useState<Category | ''>(task.category ?? '');
   const [dueDate, setDueDate]           = useState(task.dueDate ?? '');
+  const [dueTime, setDueTime]           = useState(task.dueTime ?? '11:00');
   const [reminderOffset, setReminder]   = useState<ReminderOffset>(task.reminderOffset);
   const [recurring, setRecurring]       = useState<RecurringPattern>(task.recurring);
   const [isSaving, setIsSaving]         = useState(false);
@@ -92,6 +93,7 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
         title:          title.trim(),
         priority:       (priority || 'none') as Priority,
         category:       (category || undefined) as Category | undefined,
+        dueTime:        dueDate ? dueTime : undefined,
         reminderOffset,
         recurring,
       };
@@ -114,7 +116,7 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [title, priority, category, dueDate, reminderOffset, recurring,
+  }, [title, priority, category, dueDate, dueTime, reminderOffset, recurring,
       editScope, isRecurring, task.id, task.dueDate,
       updateTask, updateTaskSeries, closeEditTask]);
 
@@ -142,6 +144,7 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
     (priority || 'none') !== task.priority ||
     (category || '') !== (task.category ?? '') ||
     dueDate !== (task.dueDate ?? '') ||
+    dueTime !== (task.dueTime ?? '11:00') ||
     reminderOffset !== task.reminderOffset ||
     recurring !== task.recurring;
 
@@ -272,19 +275,33 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
                 style={{ ...fieldControl, colorScheme: 'dark' }} />
             </div>
 
+            {/* Due time */}
+            <div>
+              <div style={fieldLabel}><Clock size={11} /> Due time</div>
+              <input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                disabled={!dueDate}
+                style={{
+                  ...fieldControl,
+                  colorScheme: 'dark',
+                  opacity: dueDate ? 1 : 0.4,
+                  cursor: dueDate ? 'pointer' : 'not-allowed',
+                }}
+              />
+            </div>
+
             {/* Remind me */}
             <div>
               <div style={fieldLabel}><Bell size={11} /> Remind me</div>
               <select value={reminderOffset} onChange={(e) => setReminder(e.target.value as ReminderOffset)} style={fieldControl}>
                 {REMINDERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
-              <p style={{ fontSize: 11, color: 'var(--text-placeholder)', marginTop: 5 }}>
-                Fires relative to due date
-              </p>
             </div>
 
-            {/* Repeat — full width */}
-            <div style={{ gridColumn: '1 / -1' }}>
+            {/* Repeat */}
+            <div>
               <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
               <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
                 {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}

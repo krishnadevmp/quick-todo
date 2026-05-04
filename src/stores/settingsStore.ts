@@ -2,20 +2,43 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppSettings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
+import { cancelAllNotifications } from '@/utils/notificationScheduler';
+
+export type PermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
+
+function readBrowserPermission(): PermissionState {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+  return Notification.permission as PermissionState;
+}
 
 interface SettingsState extends AppSettings {
+  /** Runtime browser notification permission — NOT persisted */
+  notificationPermission: PermissionState;
+
   updateSettings: (partial: Partial<AppSettings>) => void;
   applyTheme: () => void;
+
+  /** Sync the store's permission state with the current browser value */
+  refreshPermissionState: () => void;
+
+  /**
+   * Trigger the browser permission dialog.
+   * Returns the resulting permission state.
+   */
+  requestNotificationPermission: () => Promise<PermissionState>;
+
+  /** Disable notifications and cancel all scheduled timers */
+  disableNotifications: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       ...DEFAULT_SETTINGS,
+      notificationPermission: readBrowserPermission(),
 
       updateSettings: (partial) => {
         set((s) => ({ ...s, ...partial }));
-        // Re-apply theme whenever it changes
         get().applyTheme();
       },
 
@@ -25,16 +48,39 @@ export const useSettingsStore = create<SettingsState>()(
         const isDark = theme === 'dark' || (theme === 'system' && prefersDark);
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       },
+
+      refreshPermissionState: () => {
+        set({ notificationPermission: readBrowserPermission() });
+      },
+
+      requestNotificationPermission: async () => {
+        if (typeof Notification === 'undefined') {
+          set({ notificationPermission: 'unsupported' });
+          return 'unsupported';
+        }
+        const result = await Notification.requestPermission();
+        const perm = result as PermissionState;
+        set({ notificationPermission: perm });
+        if (perm === 'granted') {
+          set({ notificationsEnabled: true });
+        }
+        return perm;
+      },
+
+      disableNotifications: () => {
+        set({ notificationsEnabled: false });
+        cancelAllNotifications();
+      },
     }),
     {
       name: 'quick-todo-settings',
-      // Only persist the settings fields, not the actions
+      // notificationPermission is runtime-only — never persist it
       partialize: (s) => ({
-        theme: s.theme,
-        notificationsEnabled: s.notificationsEnabled,
-        defaultReminderOffset: s.defaultReminderOffset,
-        defaultPriority: s.defaultPriority,
-        showCompleted: s.showCompleted,
+        theme:                  s.theme,
+        notificationsEnabled:   s.notificationsEnabled,
+        defaultReminderOffset:  s.defaultReminderOffset,
+        defaultPriority:        s.defaultPriority,
+        showCompleted:          s.showCompleted,
       }),
     }
   )

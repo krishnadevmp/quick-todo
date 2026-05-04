@@ -39,8 +39,11 @@ export interface Task {
   category?: Category;
   status: TaskStatus;
 
-  /** ISO date string (YYYY-MM-DD) or full ISO timestamp */
+  /** ISO date string (YYYY-MM-DD) */
   dueDate?: string;
+
+  /** 24-hour time string (HH:MM) — used for notification scheduling */
+  dueTime?: string;
 
   /** Offset before dueDate to fire the push notification */
   reminderOffset: ReminderOffset;
