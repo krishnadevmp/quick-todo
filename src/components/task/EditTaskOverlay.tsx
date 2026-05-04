@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Tag, Flag, Calendar, RefreshCw, Bell } from 'lucide-react';
+import { X, Tag, Flag, Calendar, RefreshCw, Bell, StopCircle } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { toast } from '@/components/ui/Toast';
@@ -57,8 +57,10 @@ interface EditTaskOverlayProps {
 }
 
 export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
-  const closeEditTask = useUIStore((s) => s.closeEditTask);
-  const updateTask = useTaskStore((s) => s.updateTask);
+  const closeEditTask     = useUIStore((s) => s.closeEditTask);
+  const updateTask        = useTaskStore((s) => s.updateTask);
+  const updateTaskSeries  = useTaskStore((s) => s.updateTaskSeries);
+  const stopRecurring     = useTaskStore((s) => s.stopRecurring);
 
   const [title, setTitle]               = useState(task.title);
   const [priority, setPriority]         = useState<Priority | ''>(task.priority === 'none' ? '' : task.priority);
@@ -67,6 +69,10 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
   const [reminderOffset, setReminder]   = useState<ReminderOffset>(task.reminderOffset);
   const [recurring, setRecurring]       = useState<RecurringPattern>(task.recurring);
   const [isSaving, setIsSaving]         = useState(false);
+  const [editScope, setEditScope]       = useState<'this' | 'series'>('this');
+
+  // Task is part of a recurring series if it has a pattern or a parentId
+  const isRecurring = task.recurring !== 'none' || Boolean(task.recurringParentId);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -82,22 +88,35 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
     if (!title.trim()) return;
     setIsSaving(true);
     try {
-      await updateTask(task.id, {
-        title: title.trim(),
-        priority: (priority || 'none') as Priority,
-        category: (category || undefined) as Category | undefined,
-        dueDate: dueDate || undefined,
+      const seriesFields = {
+        title:          title.trim(),
+        priority:       (priority || 'none') as Priority,
+        category:       (category || undefined) as Category | undefined,
         reminderOffset,
         recurring,
-      });
-      toast.success('Task updated');
+      };
+
+      if (editScope === 'series' && isRecurring) {
+        // Propagate metadata to all pending tasks in the series
+        await updateTaskSeries(task.id, seriesFields);
+        // Update this task's dueDate separately (each occurrence keeps its own)
+        if (dueDate !== (task.dueDate ?? '')) {
+          await updateTask(task.id, { dueDate: dueDate || undefined });
+        }
+      } else {
+        await updateTask(task.id, { ...seriesFields, dueDate: dueDate || undefined });
+      }
+
+      toast.success(editScope === 'series' ? 'Series updated' : 'Task updated');
       closeEditTask();
     } catch {
       toast.error('Failed to save changes');
     } finally {
       setIsSaving(false);
     }
-  }, [title, priority, category, dueDate, reminderOffset, recurring, task.id, updateTask, closeEditTask]);
+  }, [title, priority, category, dueDate, reminderOffset, recurring,
+      editScope, isRecurring, task.id, task.dueDate,
+      updateTask, updateTaskSeries, closeEditTask]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -106,6 +125,16 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave]);
+
+  const handleStopRepeating = useCallback(async () => {
+    try {
+      await stopRecurring(task.id);
+      toast.success('Task will no longer repeat');
+      closeEditTask();
+    } catch {
+      toast.error('Failed to stop recurring');
+    }
+  }, [stopRecurring, task.id, closeEditTask]);
 
   // Detect unsaved changes
   const isDirty =
@@ -189,6 +218,34 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
             }}
           />
 
+          {/* Series scope — only shown for recurring tasks */}
+          {isRecurring && (
+            <div style={{
+              display: 'flex', gap: 6, marginBottom: 16,
+              background: 'var(--bg-elevated)',
+              borderRadius: 8, padding: 4,
+            }}>
+              {(['this', 'series'] as const).map((scope) => (
+                <button
+                  key={scope}
+                  onClick={() => setEditScope(scope)}
+                  style={{
+                    flex: 1, padding: '5px 0',
+                    borderRadius: 6, border: 'none',
+                    background: editScope === scope ? 'var(--bg-surface)' : 'transparent',
+                    color: editScope === scope ? 'var(--text-primary)' : 'var(--text-sub)',
+                    fontSize: 12, fontWeight: editScope === scope ? 600 : 400,
+                    cursor: 'pointer',
+                    boxShadow: editScope === scope ? 'var(--shadow-sm)' : 'none',
+                    transition: 'all 0.12s ease',
+                  }}
+                >
+                  {scope === 'this' ? 'This task only' : 'All future tasks'}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Field grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 14px' }}>
 
@@ -243,14 +300,33 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
           borderTop: '1px solid var(--border-default)',
           background: 'var(--bg-elevated)',
         }}>
-          <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>
-            Press{' '}
-            <kbd style={{
-              background: 'var(--bg-chip)', color: 'var(--text-sub)',
-              padding: '1px 6px', borderRadius: 4, fontSize: 11,
-            }}>⌘ Enter</kbd>
-            {' '}to save
-          </span>
+          {isRecurring ? (
+            <button
+              onClick={handleStopRepeating}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 8,
+                border: '1px solid var(--priority-high)',
+                background: 'transparent',
+                color: 'var(--priority-high)',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <StopCircle size={12} />
+              Stop repeating
+            </button>
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>
+              Press{' '}
+              <kbd style={{
+                background: 'var(--bg-chip)', color: 'var(--text-sub)',
+                padding: '1px 6px', borderRadius: 4, fontSize: 11,
+              }}>⌘ Enter</kbd>
+              {' '}to save
+            </span>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={closeEditTask}

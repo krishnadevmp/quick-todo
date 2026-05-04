@@ -1,20 +1,17 @@
 import { useEffect } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function TodayView() {
   const { tasks, isLoading, loadToday } = useTaskStore();
-  const showCompleted = useSettingsStore((s) => s.showCompleted);
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
 
   useEffect(() => {
     loadToday();
   }, [loadToday]);
 
-  const visible = showCompleted ? tasks : tasks.filter((t) => t.status !== 'done');
   const doneCount = tasks.filter((t) => t.status === 'done').length;
 
   return (
@@ -55,37 +52,31 @@ export default function TodayView() {
       {/* Task list */}
       {isLoading ? (
         <TaskList tasks={[]} isLoading />
-      ) : visible.length === 0 ? (
+      ) : tasks.length === 0 ? (
         <EmptyState
-          icon="🎉"
-          title={tasks.length > 0 ? 'All done for today!' : 'Nothing due today'}
-          subtitle={
-            tasks.length > 0
-              ? "You've completed everything due today. Enjoy your day!"
-              : 'No tasks are due today. Add one to get started.'
-          }
+          icon="📋"
+          title="Nothing due today"
+          subtitle="No tasks are due today. Add one to get started."
           action={
-            tasks.length === 0 ? (
-              <button
-                onClick={openQuickAdd}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                + Add a task
-              </button>
-            ) : undefined
+            <button
+              onClick={openQuickAdd}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--accent)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 500,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              + Add a task
+            </button>
           }
         />
       ) : (
-        <TaskList tasks={visible} />
+        <TaskList tasks={tasks} />
       )}
     </div>
   );

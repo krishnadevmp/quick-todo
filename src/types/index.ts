@@ -111,5 +111,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notificationsEnabled: false,
   defaultReminderOffset: '30',
   defaultPriority: 'none',
-  showCompleted: false,
+  showCompleted: true,
 };

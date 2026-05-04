@@ -3,6 +3,7 @@ import { RefreshCw, Pencil, Trash2, Calendar, Tag } from 'lucide-react';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDueDate, isOverdue } from '@/utils/formatDate';
+import { nextOccurrenceLabel } from '@/utils/recurringUtils';
 import { toast } from '@/components/ui/Toast';
 import type { Task, Priority, TaskStatus } from '@/types';
 
@@ -40,8 +41,9 @@ export default function TaskCard({ task }: TaskCardProps) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const updateTask = useTaskStore((s) => s.updateTask);
-  const deleteTask = useTaskStore((s) => s.deleteTask);
+  const updateTask   = useTaskStore((s) => s.updateTask);
+  const completeTask = useTaskStore((s) => s.completeTask);
+  const deleteTask   = useTaskStore((s) => s.deleteTask);
   const openEditTask = useUIStore((s) => s.openEditTask);
 
   const isDone = task.status === 'done';
@@ -49,12 +51,16 @@ export default function TaskCard({ task }: TaskCardProps) {
   const dueDateLabel = formatDueDate(task.dueDate);
   const todayStr = new Date().toISOString().slice(0, 10);
 
-  const handleStatusClick = () => {
+  const handleStatusClick = async () => {
     const next = NEXT_STATUS[task.status];
-    updateTask(task.id, {
-      status: next,
-      ...(next === 'done' ? { completedAt: new Date().toISOString() } : { completedAt: undefined }),
-    });
+    if (next === 'done') {
+      const nextRecurring = await completeTask(task.id);
+      if (nextRecurring) {
+        toast.info(`🔁 Next: ${nextOccurrenceLabel(nextRecurring.dueDate ?? '')}`);
+      }
+    } else {
+      updateTask(task.id, { status: next, completedAt: undefined });
+    }
   };
 
   const handleDelete = () => {

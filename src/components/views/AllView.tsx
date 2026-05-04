@@ -1,13 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 import FilterBar from '@/components/ui/FilterBar';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function AllView() {
   const { tasks, isLoading, filter, loadFiltered } = useTaskStore();
-  const showCompleted = useSettingsStore((s) => s.showCompleted);
 
   // Reload whenever filter changes
   useEffect(() => {
@@ -20,8 +18,6 @@ export default function AllView() {
     tasks.forEach((t) => t.tags.forEach((tag) => set.add(tag)));
     return [...set].sort();
   }, [tasks]);
-
-  const visible = showCompleted ? tasks : tasks.filter((t) => t.status !== 'done');
 
   const hasActiveFilter =
     !!filter.priority || !!filter.category || filter.tags.length > 0 || !!filter.search;
@@ -38,7 +34,7 @@ export default function AllView() {
           color: 'var(--text-placeholder)',
           marginBottom: 12,
         }}>
-          {visible.length} task{visible.length !== 1 ? 's' : ''}
+          {tasks.length} task{tasks.length !== 1 ? 's' : ''}
           {hasActiveFilter ? ' matching filters' : ' total'}
         </div>
       )}
@@ -46,7 +42,7 @@ export default function AllView() {
       {/* Task list */}
       {isLoading ? (
         <TaskList tasks={[]} isLoading skeletonCount={5} />
-      ) : visible.length === 0 ? (
+      ) : tasks.length === 0 ? (
         hasActiveFilter ? (
           <EmptyState
             icon="🔍"
@@ -61,7 +57,7 @@ export default function AllView() {
           />
         )
       ) : (
-        <TaskList tasks={visible} />
+        <TaskList tasks={tasks} />
       )}
     </div>
   );
