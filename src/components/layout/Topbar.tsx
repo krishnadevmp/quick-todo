@@ -1,7 +1,8 @@
-import { Plus, Sun, Moon, Bell, BellOff, BellRing } from 'lucide-react';
+import { Plus, Sun, Moon, Bell, BellOff, BellRing, WifiOff } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from '@/components/ui/Toast';
 
 const VIEW_TITLES: Record<string, string> = {
@@ -101,6 +102,7 @@ export default function Topbar() {
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   const { theme, updateSettings } = useSettingsStore();
   const isMobile     = useIsMobile();
+  const isOnline     = useOnlineStatus();
 
   const toggleTheme = () => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' });
 
@@ -133,6 +135,25 @@ export default function Topbar() {
 
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Offline badge */}
+        {!isOnline && (
+          <div
+            title="You're offline — changes save locally"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '4px 9px',
+              borderRadius: 20,
+              background: 'rgba(239,68,68,0.12)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              color: '#ef4444',
+              fontSize: 11, fontWeight: 600,
+            }}
+          >
+            <WifiOff size={12} />
+            Offline
+          </div>
+        )}
 
         {/* Notification bell */}
         <NotificationBell />

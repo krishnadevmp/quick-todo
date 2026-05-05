@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import FAB from './FAB';
 import Topbar from './Topbar';
+import InstallBanner from '@/components/pwa/InstallBanner';
 import TodayView from '@/components/views/TodayView';
 import UpcomingView from '@/components/views/UpcomingView';
 import AllView from '@/components/views/AllView';
@@ -29,6 +30,7 @@ export default function Layout() {
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
         <Topbar />
+        <InstallBanner />
         <main style={{
           flex: 1,
           overflowY: 'auto',
