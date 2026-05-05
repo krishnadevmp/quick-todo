@@ -270,24 +270,30 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
 
             {/* Due date */}
             <div>
-              <div style={fieldLabel}><Calendar size={11} /> Due date</div>
+              <div style={fieldLabel}>
+                <Calendar size={11} />
+                {isRecurring ? 'This occurrence' : 'Due date'}
+              </div>
               <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
                 style={{ ...fieldControl, colorScheme: 'dark' }} />
             </div>
 
             {/* Due time */}
             <div>
-              <div style={fieldLabel}><Clock size={11} /> Due time</div>
+              <div style={fieldLabel}>
+                <Clock size={11} />
+                {isRecurring ? 'Remind at' : 'Due time'}
+              </div>
               <input
                 type="time"
                 value={dueTime}
                 onChange={(e) => setDueTime(e.target.value)}
-                disabled={!dueDate}
+                disabled={!isRecurring && !dueDate}
                 style={{
                   ...fieldControl,
                   colorScheme: 'dark',
-                  opacity: dueDate ? 1 : 0.4,
-                  cursor: dueDate ? 'pointer' : 'not-allowed',
+                  opacity: (isRecurring || dueDate) ? 1 : 0.4,
+                  cursor: (isRecurring || dueDate) ? 'pointer' : 'not-allowed',
                 }}
               />
             </div>
@@ -308,6 +314,27 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
               </select>
             </div>
           </div>
+
+          {/* Recurring info callout */}
+          {isRecurring && (
+            <div style={{
+              marginTop: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.2)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+            }}>
+              <RefreshCw size={13} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                {editScope === 'series'
+                  ? 'Reminder time and repeat pattern will update for all future occurrences. Each occurrence keeps its own date.'
+                  : 'Editing this occurrence only. Use "All future tasks" to change the reminder time or repeat pattern.'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ── Footer ── */}

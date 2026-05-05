@@ -101,21 +101,31 @@ export default function QuickAddOverlay() {
     if (parsed.recurring) setRecurring(parsed.recurring);
   };
 
+  const isRecurring = recurring !== 'none';
+
   const handleSubmit = useCallback(async () => {
     const parsed = parseInput(title);
     const cleanTitle = parsed.title || title.trim();
     if (!cleanTitle) return;
     setIsSubmitting(true);
+
+    const effectiveRecurring = (recurring || parsed.recurring || 'none') as RecurringPattern;
+    const isRec = effectiveRecurring !== 'none';
+    const today = new Date().toISOString().slice(0, 10);
+
     try {
       await addTask({
         title: cleanTitle,
         priority: (priority || parsed.priority || 'none') as Priority,
         category: (category || parsed.category) as Category | undefined,
         status: 'todo',
-        dueDate: dueDate || parsed.dueDate,
-        dueTime: (dueDate || parsed.dueDate) ? dueTime : undefined,
-        reminderOffset,
-        recurring: recurring || parsed.recurring || 'none',
+        // Recurring tasks always start today; one-off tasks use whatever date was picked
+        dueDate: isRec ? today : (dueDate || parsed.dueDate),
+        // Recurring: remind at the chosen time regardless; one-off: only if a date was set
+        dueTime: isRec ? dueTime : ((dueDate || parsed.dueDate) ? dueTime : undefined),
+        // Recurring: always fire at the exact time; one-off: use the offset picker
+        reminderOffset: isRec ? 'at' : reminderOffset,
+        recurring: effectiveRecurring,
         tags: parsed.tags,
       });
       closeQuickAdd();
@@ -230,47 +240,92 @@ export default function QuickAddOverlay() {
               </select>
             </div>
 
-            {/* Due date */}
-            <div>
-              <div style={fieldLabel}><Calendar size={11} /> Due date</div>
-              <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-                style={{ ...fieldControl, colorScheme: 'dark' }} />
-            </div>
+            {isRecurring ? (
+              /* ── Recurring mode: Repeat + Remind at time ── */
+              <>
+                <div>
+                  <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
+                  <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
+                    {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
 
-            {/* Due time */}
-            <div>
-              <div style={fieldLabel}><Clock size={11} /> Due time</div>
-              <input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                disabled={!dueDate}
-                style={{
-                  ...fieldControl,
-                  colorScheme: 'dark',
-                  opacity: dueDate ? 1 : 0.4,
-                  cursor: dueDate ? 'pointer' : 'not-allowed',
-                }}
-              />
-            </div>
+                <div>
+                  <div style={fieldLabel}><Clock size={11} /> Remind at</div>
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    style={{ ...fieldControl, colorScheme: 'dark' }}
+                  />
+                </div>
+              </>
+            ) : (
+              /* ── One-off mode: Due date + time + reminder offset + repeat ── */
+              <>
+                <div>
+                  <div style={fieldLabel}><Calendar size={11} /> Due date</div>
+                  <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                    style={{ ...fieldControl, colorScheme: 'dark' }} />
+                </div>
 
-            {/* Remind me */}
-            <div>
-              <div style={fieldLabel}><Bell size={11} /> Remind me</div>
-              <select value={reminderOffset} onChange={(e) => setReminderOffset(e.target.value as ReminderOffset)} style={fieldControl}>
-                {REMINDERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
-            </div>
+                <div>
+                  <div style={fieldLabel}><Clock size={11} /> Due time</div>
+                  <input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    disabled={!dueDate}
+                    style={{
+                      ...fieldControl,
+                      colorScheme: 'dark',
+                      opacity: dueDate ? 1 : 0.4,
+                      cursor: dueDate ? 'pointer' : 'not-allowed',
+                    }}
+                  />
+                </div>
 
-            {/* Repeat */}
-            <div>
-              <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
-              <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
-                {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
-            </div>
+                <div>
+                  <div style={fieldLabel}><Bell size={11} /> Remind me</div>
+                  <select value={reminderOffset} onChange={(e) => setReminderOffset(e.target.value as ReminderOffset)} style={fieldControl}>
+                    {REMINDERS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <div style={fieldLabel}><RefreshCw size={11} /> Repeat</div>
+                  <select value={recurring} onChange={(e) => setRecurring(e.target.value as RecurringPattern)} style={fieldControl}>
+                    {RECURRING.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
 
           </div>
+
+          {/* Info callout — only shown for recurring tasks */}
+          {isRecurring && (
+            <div style={{
+              marginTop: 14,
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.2)',
+              display: 'flex',
+              gap: 8,
+              alignItems: 'flex-start',
+            }}>
+              <RefreshCw size={13} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+              <span style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                Starts today. A new task is created each {
+                  recurring === 'daily' ? 'day' :
+                  recurring === 'weekdays' ? 'weekday' :
+                  recurring === 'weekly' ? 'week' : 'month'
+                } when you complete the current one.
+                Past-due occurrences stay visible as overdue so you can track missed days.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ── Footer ── */}
