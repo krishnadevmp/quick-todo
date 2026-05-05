@@ -1,25 +1,25 @@
-import { useEffect, useMemo } from 'react';
-import { useTaskStore } from '@/stores/taskStore';
-import { useSettingsStore } from '@/stores/settingsStore';
-import FilterBar from '@/components/ui/FilterBar';
-import TaskList from '@/components/task/TaskList';
-import EmptyState from '@/components/ui/EmptyState';
+import { useEffect, useMemo } from "react";
+import { useTaskStore } from "@/stores/taskStore";
+import { useSettingsStore } from "@/stores/settingsStore";
+import FilterBar from "@/components/ui/FilterBar";
+import TaskList from "@/components/task/TaskList";
+import EmptyState from "@/components/ui/EmptyState";
+import { EmptyIllustration } from "@/components/ui/EmptyIllustration";
 
 export default function AllView() {
-  const { tasks, isLoading, filter, loadFiltered } = useTaskStore();
+  const { tasks, isLoading, filter, loadFiltered, resetFilter } =
+    useTaskStore();
   const showCompleted = useSettingsStore((s) => s.showCompleted);
 
-  // Reload whenever filter changes
   useEffect(() => {
     loadFiltered();
   }, [filter, loadFiltered]);
 
   const visibleTasks = useMemo(
-    () => (showCompleted ? tasks : tasks.filter((t) => t.status !== 'done')),
-    [tasks, showCompleted]
+    () => (showCompleted ? tasks : tasks.filter((t) => t.status !== "done")),
+    [tasks, showCompleted],
   );
 
-  // Collect all unique tags across tasks for the tag dropdown
   const allTags = useMemo(() => {
     const set = new Set<string>();
     tasks.forEach((t) => t.tags.forEach((tag) => set.add(tag)));
@@ -27,42 +27,81 @@ export default function AllView() {
   }, [tasks]);
 
   const hasActiveFilter =
-    !!filter.priority || !!filter.category || filter.tags.length > 0 || !!filter.search;
+    !!filter.priority ||
+    !!filter.category ||
+    filter.tags.length > 0 ||
+    !!filter.search;
+
+  // No tasks exist at all — full-width centered empty state, no filter bar
+  if (!isLoading && tasks.length === 0 && !hasActiveFilter) {
+    return (
+      <EmptyState
+        icon={<EmptyIllustration variant="tasks" />}
+        title="No tasks yet"
+        subtitle="Add your first task using the Add Task button or press N."
+      />
+    );
+  }
+
+  // Tasks exist but all hidden by showCompleted setting — full-width hint
+  if (
+    !isLoading &&
+    tasks.length > 0 &&
+    visibleTasks.length === 0 &&
+    !hasActiveFilter
+  ) {
+    return (
+      <EmptyState
+        icon={<EmptyIllustration variant="tasks" />}
+        title="All tasks completed"
+        subtitle="Enable 'Show completed tasks' in Settings to see them here."
+      />
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 680 }}>
-      {/* Filter bar */}
+    // margin: auto centers the constrained block within the full content area
+    <div>
       <FilterBar allTags={allTags} />
 
-      {/* Result count */}
       {!isLoading && (
-        <div style={{
-          fontSize: 12,
-          color: 'var(--text-placeholder)',
-          marginBottom: 12,
-        }}>
-          {visibleTasks.length} task{visibleTasks.length !== 1 ? 's' : ''}
-          {hasActiveFilter ? ' matching filters' : ' total'}
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--text-placeholder)",
+            marginBottom: 12,
+          }}
+        >
+          {visibleTasks.length} task{visibleTasks.length !== 1 ? "s" : ""}
+          {hasActiveFilter ? " matching filters" : " total"}
         </div>
       )}
 
-      {/* Task list */}
       {isLoading ? (
         <TaskList tasks={[]} isLoading skeletonCount={5} />
       ) : visibleTasks.length === 0 ? (
-        hasActiveFilter ? (
-          <EmptyState
-            icon="🔍"
-            title="No tasks match your filters"
-            subtitle="Try adjusting the filters or clearing them to see all tasks."
-          />
-        ) : (
-          <EmptyState
-            icon="📋"
-            title="No tasks yet"
-            subtitle="Add your first task using the Add Task button or press N."
-          />
-        )
+        <EmptyState
+          icon={<EmptyIllustration variant="search" />}
+          title="No tasks match your filters"
+          subtitle="Try adjusting the filters or clearing them to see all tasks."
+          action={
+            <button
+              onClick={resetFilter}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "var(--radius-md)",
+                background: "var(--accent)",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 500,
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Clear filters
+            </button>
+          }
+        />
       ) : (
         <TaskList tasks={visibleTasks} />
       )}
