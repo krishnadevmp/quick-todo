@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TaskRepository } from '@/db/taskRepository';
+import { EmptyIllustration } from '@/components/ui/EmptyIllustration';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -165,12 +166,12 @@ export default function DashboardView() {
 
   if (!stats || stats.total === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '64px 20px' }}>
-        <div style={{ fontSize: 44, marginBottom: 14 }}>📊</div>
-        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 20px', gap: 16 }}>
+        <div className="empty-float"><EmptyIllustration variant="stats" /></div>
+        <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
           No data yet
         </p>
-        <p style={{ fontSize: 13, color: 'var(--text-sub)' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-sub)', margin: 0 }}>
           Add and complete tasks to see your productivity stats.
         </p>
       </div>

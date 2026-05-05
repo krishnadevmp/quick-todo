@@ -4,6 +4,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
+import { EmptyIllustration } from '@/components/ui/EmptyIllustration';
 
 export default function TodayView() {
   const { tasks, isLoading, loadToday } = useTaskStore();
@@ -57,7 +58,7 @@ export default function TodayView() {
         <TaskList tasks={[]} isLoading />
       ) : tasks.length === 0 ? (
         <EmptyState
-          icon="📋"
+          icon={<EmptyIllustration variant="tasks" />}
           title="Nothing due today"
           subtitle="No tasks are due today. Add one to get started."
           action={

@@ -122,3 +122,13 @@ body {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* ── Empty state illustration float ─────────────────────────────────────── */
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+.empty-float {
+  animation: empty-float 3.5s ease-in-out infinite;
+  will-change: transform;
+}

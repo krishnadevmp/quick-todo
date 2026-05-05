@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import FilterBar from '@/components/ui/FilterBar';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
+import { EmptyIllustration } from '@/components/ui/EmptyIllustration';
 
 export default function AllView() {
   const { tasks, isLoading, filter, loadFiltered } = useTaskStore();
@@ -52,13 +53,13 @@ export default function AllView() {
       ) : visibleTasks.length === 0 ? (
         hasActiveFilter ? (
           <EmptyState
-            icon="🔍"
+            icon={<EmptyIllustration variant="search" />}
             title="No tasks match your filters"
             subtitle="Try adjusting the filters or clearing them to see all tasks."
           />
         ) : (
           <EmptyState
-            icon="📋"
+            icon={<EmptyIllustration variant="tasks" />}
             title="No tasks yet"
             subtitle="Add your first task using the Add Task button or press N."
           />

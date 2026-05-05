@@ -3,6 +3,7 @@ import { useTaskStore } from '@/stores/taskStore';
 import TaskList from '@/components/task/TaskList';
 import DaySection from '@/components/ui/DaySection';
 import EmptyState from '@/components/ui/EmptyState';
+import { EmptyIllustration } from '@/components/ui/EmptyIllustration';
 import type { Task } from '@/types';
 
 // ── Date helpers ──────────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ export default function UpcomingView() {
   if (!hasAnything) {
     return (
       <EmptyState
-        icon="📅"
+        icon={<EmptyIllustration variant="upcoming" />}
         title="You're all caught up!"
         subtitle="No tasks due in the next 7 days. Enjoy the breathing room."
       />
