@@ -228,6 +228,32 @@ export const TaskRepository = {
     }
   },
 
+  // ── Data management ─────────────────────────────────────────────────────
+
+  /** Permanently delete all completed tasks. Returns the count removed. */
+  async clearCompleted(): Promise<number> {
+    const done = await db.tasks.where('status').equals('done').toArray();
+    await db.tasks.bulkDelete(done.map((t) => t.id));
+    return done.length;
+  },
+
+  /** Serialize all tasks to a JSON string for export. */
+  async exportJSON(): Promise<string> {
+    const all = await db.tasks.toArray();
+    return JSON.stringify(all, null, 2);
+  },
+
+  /**
+   * Parse a previously exported JSON string and upsert all tasks.
+   * Returns the number of tasks imported.
+   */
+  async importJSON(text: string): Promise<number> {
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) throw new Error('Expected an array of tasks');
+    await db.tasks.bulkPut(parsed);
+    return parsed.length;
+  },
+
   // ── Stats (for dashboard) ────────────────────────────────────────────────
 
   async getStats() {
