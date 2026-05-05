@@ -1,6 +1,7 @@
 import { Plus, Sun, Moon, Bell, BellOff, BellRing } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { toast } from '@/components/ui/Toast';
 
 const VIEW_TITLES: Record<string, string> = {
@@ -99,6 +100,7 @@ export default function Topbar() {
   const activeView   = useUIStore((s) => s.activeView);
   const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   const { theme, updateSettings } = useSettingsStore();
+  const isMobile     = useIsMobile();
 
   const toggleTheme = () => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' });
 
@@ -153,23 +155,25 @@ export default function Topbar() {
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
 
-        {/* New task button */}
-        <button
-          onClick={openQuickAdd}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '7px 14px',
-            borderRadius: 8, border: 'none',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          New
-        </button>
+        {/* New task button — hidden on mobile (FAB handles it) */}
+        {!isMobile && (
+          <button
+            onClick={openQuickAdd}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 14px',
+              borderRadius: 8, border: 'none',
+              background: 'var(--accent)', color: '#fff',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            New
+          </button>
+        )}
       </div>
     </header>
   );

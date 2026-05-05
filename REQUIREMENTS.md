@@ -419,31 +419,36 @@ The following are deliberately excluded from the first release:
 
 ## 10. Release Phasing
 
-### Phase 1 — MVP (Core Loop)
-**Goal:** The app is usable as a daily driver.
-- Quick add bar with inline shortcuts
-- Task list with category, priority, status, due date
-- Today / Upcoming / All views
-- Recurring tasks
-- Push notifications + reminders
-- Dark mode
-- PWA install (works on mobile + desktop)
+### Implemented Phases
 
-### Phase 2 — Polish & Persistence
-**Goal:** Feels complete; data is safe across devices.
-- Dashboard with charts
-- Search (Ctrl+K)
-- Cloud sync (Supabase or Firebase, opt-in)
-- Settings page (quiet hours, digest, auto-archive)
-- Onboarding flow for new users
+| # | Phase | Status |
+|---|-------|--------|
+| 1 | Project scaffold + Dexie schema + CSS tokens | ✅ Done |
+| 2 | Quick-add input with inline shortcut parsing | ✅ Done |
+| 3 | TaskCard + Today / Upcoming / All views + filter system | ✅ Done |
+| 4 | Task edit overlay + undo-delete toast + UI spacing | ✅ Done |
+| 5 | EditTask bug fixes + completed tasks visibility | ✅ Done |
+| 6 | Recurring tasks engine (daily / weekdays / weekly / monthly) | ✅ Done |
+| 7 | Push notifications with due-time support | ✅ Done |
+| 8 | Dashboard view (stats, weekly chart, streaks) | ✅ Done |
+| 9 | Settings view (theme, defaults, show-completed, data export/import) | ✅ Done |
+| 10 | Empty state SVG illustrations + float animation | ✅ Done |
+| 12 | Mobile layout — bottom nav, FAB, responsive switching | ✅ Done |
 
-### Phase 3 — Power Features
-**Goal:** Handles complex needs without losing simplicity.
+### Pending Phases
+
+| # | Phase | Notes |
+|---|-------|-------|
+| 11 | Performance — `@tanstack/react-virtual`, `useMemo` selectors | Deferred — requires package install |
+| 13 | PWA polish — app icons, install prompt banner, offline indicator | Next up |
+| 14 | Testing & cleanup — Vitest + React Testing Library | Final phase |
+
+### Future (V2)
+- Cloud sync (Supabase, opt-in)
 - Subtasks / checklists
-- Labels (user-defined, beyond 4 categories)
+- Labels (user-defined)
 - Google Calendar integration
-- Bulk actions (multi-select, bulk complete/delete)
-- Data export (JSON / CSV)
+- Bulk actions (multi-select)
 
 ---
 
