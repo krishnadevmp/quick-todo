@@ -15,8 +15,35 @@ export default function TodayView() {
     loadToday();
   }, [loadToday]);
 
-  const doneCount   = tasks.filter((t) => t.status === 'done').length;
+  const doneCount    = tasks.filter((t) => t.status === 'done').length;
   const visibleTasks = showCompleted ? tasks : tasks.filter((t) => t.status !== 'done');
+
+  if (!isLoading && tasks.length === 0) {
+    return (
+      <EmptyState
+        icon={<EmptyIllustration variant="tasks" />}
+        title="Nothing due today"
+        subtitle="No tasks are due today. Add one to get started."
+        action={
+          <button
+            onClick={openQuickAdd}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 500,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            + Add a task
+          </button>
+        }
+      />
+    );
+  }
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -53,32 +80,8 @@ export default function TodayView() {
         </div>
       )}
 
-      {/* Task list */}
       {isLoading ? (
         <TaskList tasks={[]} isLoading />
-      ) : tasks.length === 0 ? (
-        <EmptyState
-          icon={<EmptyIllustration variant="tasks" />}
-          title="Nothing due today"
-          subtitle="No tasks are due today. Add one to get started."
-          action={
-            <button
-              onClick={openQuickAdd}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--accent)',
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 500,
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              + Add a task
-            </button>
-          }
-        />
       ) : (
         <TaskList tasks={visibleTasks} />
       )}

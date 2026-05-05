@@ -12,9 +12,11 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '64px 24px',
+      width: '100%',
+      minHeight: '60vh',
       textAlign: 'center',
       gap: 16,
+      padding: '24px',
     }}>
       <div style={{ lineHeight: 1 }}>{icon}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
