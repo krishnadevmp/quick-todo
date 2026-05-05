@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function TodayView() {
   const { tasks, isLoading, loadToday } = useTaskStore();
-  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
+  const openQuickAdd  = useUIStore((s) => s.openQuickAdd);
+  const showCompleted = useSettingsStore((s) => s.showCompleted);
 
   useEffect(() => {
     loadToday();
   }, [loadToday]);
 
-  const doneCount = tasks.filter((t) => t.status === 'done').length;
+  const doneCount   = tasks.filter((t) => t.status === 'done').length;
+  const visibleTasks = showCompleted ? tasks : tasks.filter((t) => t.status !== 'done');
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -76,7 +79,7 @@ export default function TodayView() {
           }
         />
       ) : (
-        <TaskList tasks={tasks} />
+        <TaskList tasks={visibleTasks} />
       )}
     </div>
   );

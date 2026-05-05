@@ -1,16 +1,23 @@
 import { useEffect, useMemo } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import FilterBar from '@/components/ui/FilterBar';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function AllView() {
   const { tasks, isLoading, filter, loadFiltered } = useTaskStore();
+  const showCompleted = useSettingsStore((s) => s.showCompleted);
 
   // Reload whenever filter changes
   useEffect(() => {
     loadFiltered();
   }, [filter, loadFiltered]);
+
+  const visibleTasks = useMemo(
+    () => (showCompleted ? tasks : tasks.filter((t) => t.status !== 'done')),
+    [tasks, showCompleted]
+  );
 
   // Collect all unique tags across tasks for the tag dropdown
   const allTags = useMemo(() => {
@@ -34,7 +41,7 @@ export default function AllView() {
           color: 'var(--text-placeholder)',
           marginBottom: 12,
         }}>
-          {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+          {visibleTasks.length} task{visibleTasks.length !== 1 ? 's' : ''}
           {hasActiveFilter ? ' matching filters' : ' total'}
         </div>
       )}
@@ -42,7 +49,7 @@ export default function AllView() {
       {/* Task list */}
       {isLoading ? (
         <TaskList tasks={[]} isLoading skeletonCount={5} />
-      ) : tasks.length === 0 ? (
+      ) : visibleTasks.length === 0 ? (
         hasActiveFilter ? (
           <EmptyState
             icon="🔍"
@@ -57,7 +64,7 @@ export default function AllView() {
           />
         )
       ) : (
-        <TaskList tasks={tasks} />
+        <TaskList tasks={visibleTasks} />
       )}
     </div>
   );
