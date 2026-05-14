@@ -1,4 +1,5 @@
 import { Plus, Sun, Moon, Bell, BellOff, BellRing, WifiOff } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -64,23 +65,14 @@ function NotificationBell() {
 
   return (
     <div style={{ position: 'relative' }}>
-      <button
-        onClick={handleClick}
-        title={title}
+      <Button variant="ghost" iconOnly size="md"
+        onClick={handleClick} title={title}
         style={{
-          width: 34, height: 34,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderRadius: 8,
-          border: `1px solid ${permission === 'default' ? 'var(--accent)' : 'var(--border-default)'}`,
-          background: 'transparent', cursor: 'pointer',
           color,
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-      >
+          border: `1px solid ${permission === 'default' ? 'var(--accent)' : 'var(--border-default)'}`,
+        }}>
         {icon}
-      </button>
+      </Button>
 
       {/* Dot badge — shown only when permission hasn't been decided yet */}
       {permission === 'default' && (
@@ -159,41 +151,19 @@ export default function Topbar() {
         <NotificationBell />
 
         {/* Theme toggle */}
-        <button
+        <Button variant="ghost" iconOnly size="md"
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Switch to light' : 'Switch to dark'}
-          style={{
-            width: 34, height: 34,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderRadius: 8, border: '1px solid var(--border-default)',
-            background: 'transparent', cursor: 'pointer',
-            color: 'var(--text-sub)',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-        >
+          style={{ border: '1px solid var(--border-default)' }}>
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
+        </Button>
 
         {/* New task button — hidden on mobile (FAB handles it) */}
         {!isMobile && (
-          <button
-            onClick={openQuickAdd}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '7px 14px',
-              borderRadius: 8, border: 'none',
-              background: 'var(--accent)', color: '#fff',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
-          >
+          <Button variant="primary" onClick={openQuickAdd}>
             <Plus size={14} strokeWidth={2.5} />
             New
-          </button>
+          </Button>
         )}
       </div>
     </header>

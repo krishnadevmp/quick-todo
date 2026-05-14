@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Calendar, LayoutList, BarChart2, Settings, Plus } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useUIStore } from '@/stores/uiStore';
 import { TaskRepository } from '@/db/taskRepository';
 import type { ViewId } from '@/types';
@@ -15,6 +16,45 @@ const NAV_ITEMS: {
   { id: 'dashboard', label: 'Dashboard', icon: BarChart2    },
   { id: 'settings',  label: 'Settings',  icon: Settings     },
 ];
+
+function NavItem({ active, onClick, children }: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        width: '100%',
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '8px 10px',
+        marginBottom: 2,
+        borderRadius: 8, border: 'none',
+        background: pressed
+          ? 'var(--bg-chip)'
+          : active
+          ? 'var(--accent-soft)'
+          : hovered
+          ? 'var(--bg-elevated)'
+          : 'transparent',
+        color: active ? 'var(--accent)' : 'var(--text-sub)',
+        fontSize: 13, fontWeight: active ? 600 : 400,
+        cursor: 'pointer', textAlign: 'left',
+        transition: 'background 0.12s, color 0.12s, opacity 0.1s',
+        opacity: pressed ? 0.75 : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function Sidebar() {
   const activeView = useUIStore((s) => s.activeView);
@@ -58,23 +98,11 @@ export default function Sidebar() {
 
       {/* Add Task button */}
       <div style={{ padding: '0 12px 16px' }}>
-        <button
-          onClick={openQuickAdd}
-          style={{
-            width: '100%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '9px 12px',
-            borderRadius: 9, border: 'none',
-            background: 'var(--accent)', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
-        >
+        <Button variant="primary" onClick={openQuickAdd}
+          style={{ width: '100%', borderRadius: 9, padding: '9px 12px' }}>
           <Plus size={15} strokeWidth={2.5} />
           Add Task
-        </button>
+        </Button>
       </div>
 
       {/* Nav items */}
@@ -82,24 +110,7 @@ export default function Sidebar() {
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const active = activeView === id;
           return (
-            <button
-              key={id}
-              onClick={() => setView(id)}
-              style={{
-                width: '100%',
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 10px',
-                marginBottom: 2,
-                borderRadius: 8, border: 'none',
-                background: active ? 'var(--accent-soft)' : 'transparent',
-                color: active ? 'var(--accent)' : 'var(--text-sub)',
-                fontSize: 13, fontWeight: active ? 600 : 400,
-                cursor: 'pointer', textAlign: 'left',
-                transition: 'background 0.12s, color 0.12s',
-              }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
-            >
+            <NavItem key={id} active={active} onClick={() => setView(id)}>
               <Icon size={15} strokeWidth={active ? 2.5 : 2} />
               <span style={{ flex: 1 }}>{label}</span>
 
@@ -115,7 +126,7 @@ export default function Sidebar() {
                   {todayCount > 99 ? '99+' : todayCount}
                 </span>
               )}
-            </button>
+            </NavItem>
           );
         })}
       </nav>

@@ -12,6 +12,38 @@ const NAV_ITEMS: { id: ViewId; label: string; icon: React.ComponentType<{ size?:
   { id: 'settings',  label: 'Settings', icon: Settings     },
 ];
 
+function BottomNavItem({ active, onClick, children }: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      style={{
+        flex: 1,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 3,
+        border: 'none', background: 'transparent',
+        color: active ? 'var(--accent)' : 'var(--text-placeholder)',
+        cursor: 'pointer',
+        position: 'relative',
+        padding: '4px 0',
+        transition: 'color 0.15s, opacity 0.1s, transform 0.1s',
+        opacity: pressed ? 0.6 : 1,
+        transform: pressed ? 'scale(0.93)' : 'scale(1)',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function BottomNav() {
   const activeView   = useUIStore((s) => s.activeView);
   const setView      = useUIStore((s) => s.setView);
@@ -37,22 +69,7 @@ export default function BottomNav() {
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
         const active = activeView === id;
         return (
-          <button
-            key={id}
-            onClick={() => setView(id)}
-            style={{
-              flex: 1,
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              gap: 3,
-              border: 'none', background: 'transparent',
-              color: active ? 'var(--accent)' : 'var(--text-placeholder)',
-              cursor: 'pointer',
-              position: 'relative',
-              padding: '4px 0',
-              transition: 'color 0.15s',
-            }}
-          >
+          <BottomNavItem key={id} active={active} onClick={() => setView(id)}>
             <Icon size={20} strokeWidth={active ? 2.5 : 2} />
             <span style={{ fontSize: 10, fontWeight: active ? 600 : 400 }}>{label}</span>
 
@@ -70,7 +87,7 @@ export default function BottomNav() {
                 {todayCount > 99 ? '99+' : todayCount}
               </span>
             )}
-          </button>
+          </BottomNavItem>
         );
       })}
     </nav>

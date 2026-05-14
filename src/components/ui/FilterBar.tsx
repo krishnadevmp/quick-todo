@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Search, X, ChevronDown, ArrowUpDown } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useTaskStore } from '@/stores/taskStore';
 import type { Priority, Category, SortBy } from '@/types';
 
@@ -38,23 +39,23 @@ function Chip({
   activeColor?: string;
 }) {
   return (
-    <button
+    <Button
       onClick={onClick}
+      variant={active ? "primary" : "outline"}
+      size="sm"
       style={{
-        padding: '4px 10px',
         borderRadius: 20,
-        fontSize: 12,
         fontWeight: active ? 600 : 400,
-        border: `1.5px solid ${active ? (activeColor ?? 'var(--accent)') : 'var(--border-default)'}`,
-        background: active ? (activeColor ? `${activeColor}18` : 'var(--accent-soft)') : 'transparent',
-        color: active ? (activeColor ?? 'var(--accent)') : 'var(--text-sub)',
-        cursor: 'pointer',
-        transition: 'all 0.12s ease',
         whiteSpace: 'nowrap',
+        ...(active && activeColor
+          ? { background: `${activeColor}18`, color: activeColor, border: `1.5px solid ${activeColor}` }
+          : active
+          ? { border: '1.5px solid var(--accent)' }
+          : { border: '1.5px solid var(--border-default)' }),
       }}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -80,25 +81,19 @@ function TagFilter({ allTags, selectedTags, onToggle }: {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button
+      <Button
         onClick={() => setOpen((o) => !o)}
+        variant={selectedTags.length > 0 ? "primary" : "outline"}
+        size="sm"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '4px 10px',
           borderRadius: 20,
-          fontSize: 12,
           fontWeight: selectedTags.length > 0 ? 600 : 400,
           border: `1.5px solid ${selectedTags.length > 0 ? 'var(--accent)' : 'var(--border-default)'}`,
-          background: selectedTags.length > 0 ? 'var(--accent-soft)' : 'transparent',
-          color: selectedTags.length > 0 ? 'var(--accent)' : 'var(--text-sub)',
-          cursor: 'pointer',
         }}
       >
         Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
         <ChevronDown size={11} />
-      </button>
+      </Button>
 
       {open && (
         <div style={{
@@ -116,21 +111,19 @@ function TagFilter({ allTags, selectedTags, onToggle }: {
           {allTags.map((tag) => {
             const checked = selectedTags.includes(tag);
             return (
-              <button
+              <Button
                 key={tag}
+                variant="ghost"
                 onClick={() => onToggle(tag)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  justifyContent: 'flex-start',
                   gap: 8,
                   width: '100%',
                   padding: '6px 12px',
-                  background: checked ? 'var(--accent-soft)' : 'transparent',
+                  borderRadius: 0,
+                  background: checked ? 'var(--accent-soft)' : undefined,
                   color: checked ? 'var(--accent)' : 'var(--text-primary)',
                   fontSize: 13,
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
                 }}
               >
                 <span style={{
@@ -148,7 +141,7 @@ function TagFilter({ allTags, selectedTags, onToggle }: {
                   )}
                 </span>
                 #{tag}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -178,25 +171,15 @@ function SortControl({ sortBy, sortDir, onChange }: {
 
   return (
     <div ref={ref} style={{ position: 'relative', marginLeft: 'auto' }}>
-      <button
+      <Button
         onClick={() => setOpen((o) => !o)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '4px 10px',
-          borderRadius: 20,
-          fontSize: 12,
-          border: '1.5px solid var(--border-default)',
-          background: 'transparent',
-          color: 'var(--text-sub)',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-        }}
+        variant="outline"
+        size="sm"
+        style={{ borderRadius: 20, border: '1.5px solid var(--border-default)', whiteSpace: 'nowrap' }}
       >
         <ArrowUpDown size={11} />
         {current}
-      </button>
+      </Button>
 
       {open && (
         <div style={{
@@ -212,25 +195,22 @@ function SortControl({ sortBy, sortDir, onChange }: {
           padding: '6px 0',
         }}>
           {SORT_OPTIONS.map((opt) => (
-            <button
+            <Button
               key={opt.value}
+              variant="ghost"
               onClick={() => {
-                // Clicking same field toggles direction
                 const newDir = opt.value === sortBy && sortDir === 'desc' ? 'asc' : 'desc';
                 onChange(opt.value, newDir);
                 setOpen(false);
               }}
               style={{
-                display: 'flex',
-                alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
                 padding: '6px 12px',
-                background: sortBy === opt.value ? 'var(--accent-soft)' : 'transparent',
+                borderRadius: 0,
+                background: sortBy === opt.value ? 'var(--accent-soft)' : undefined,
                 color: sortBy === opt.value ? 'var(--accent)' : 'var(--text-primary)',
                 fontSize: 13,
-                border: 'none',
-                cursor: 'pointer',
                 fontWeight: sortBy === opt.value ? 600 : 400,
               }}
             >
@@ -238,7 +218,7 @@ function SortControl({ sortBy, sortDir, onChange }: {
               {sortBy === opt.value && (
                 <span style={{ fontSize: 11 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -307,12 +287,11 @@ export default function FilterBar({ allTags }: FilterBarProps) {
           }}
         />
         {searchDraft && (
-          <button
-            onClick={() => { setSearchDraft(''); setFilter({ search: '' }); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-placeholder)', display: 'flex' }}
-          >
+          <Button variant="ghost" iconOnly size="sm"
+            style={{ color: 'var(--text-placeholder)' }}
+            onClick={() => { setSearchDraft(''); setFilter({ search: '' }); }}>
             <X size={14} />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -356,18 +335,12 @@ export default function FilterBar({ allTags }: FilterBarProps) {
 
         {/* Clear filters */}
         {activeCount > 0 && (
-          <button
-            onClick={() => { resetFilter(); setSearchDraft(''); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '4px 10px', borderRadius: 20, fontSize: 12,
-              border: 'none', background: 'rgba(239,68,68,0.1)',
-              color: 'var(--priority-high)', cursor: 'pointer', fontWeight: 500,
-            }}
-          >
+          <Button variant="danger-ghost" size="sm"
+            style={{ borderRadius: 20, background: 'rgba(239,68,68,0.1)', color: 'var(--priority-high)' }}
+            onClick={() => { resetFilter(); setSearchDraft(''); }}>
             <X size={11} />
             Clear {activeCount}
-          </button>
+          </Button>
         )}
 
         {/* Sort */}

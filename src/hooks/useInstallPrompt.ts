@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocalStorage } from './useLocalStorage';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,11 +9,11 @@ interface BeforeInstallPromptEvent extends Event {
 export function useInstallPrompt() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches
+    typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches,
   );
-  const [isDismissed] = useState(() =>
-    typeof localStorage !== 'undefined' && localStorage.getItem('pwa-install-dismissed') === '1'
-  );
+  // Persisted dismissal — shared with InstallBanner via isDismissed return value.
+  // Legacy stored value "1" parses to number 1, which is truthy — backward-compat. ✓
+  const [isDismissed, setIsDismissed] = useLocalStorage('pwa-install-dismissed', false);
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -39,15 +40,19 @@ export function useInstallPrompt() {
     setPromptEvent(null);
   };
 
+  /** Persists dismissal and clears any pending native prompt. */
   const dismiss = () => {
-    localStorage.setItem('pwa-install-dismissed', '1');
+    setIsDismissed(true);
     setPromptEvent(null);
   };
 
   return {
+    /** True when the browser is ready to show an install prompt. */
     canInstall: !!promptEvent && !isInstalled && !isDismissed,
     install,
     dismiss,
     isInstalled,
+    /** Exposed so consumers (e.g. iOS banner) can read dismissal state reactively. */
+    isDismissed: !!isDismissed,
   };
 }

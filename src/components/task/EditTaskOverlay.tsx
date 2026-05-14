@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Tag, Flag, Calendar, Clock, RefreshCw, Bell, StopCircle } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useUIStore } from '@/stores/uiStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { toast } from '@/components/ui/Toast';
@@ -185,19 +186,9 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
               </span>
             )}
           </div>
-          <button
-            onClick={closeEditTask}
-            style={{
-              width: 28, height: 28, borderRadius: 8, border: 'none',
-              background: 'transparent', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-sub)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
+          <Button variant="ghost" iconOnly size="sm" onClick={closeEditTask} title="Close">
             <X size={15} />
-          </button>
+          </Button>
         </div>
 
         {/* ── Body ── */}
@@ -345,22 +336,10 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
           background: 'var(--bg-elevated)',
         }}>
           {isRecurring ? (
-            <button
-              onClick={handleStopRepeating}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 8,
-                border: '1px solid var(--priority-high)',
-                background: 'transparent',
-                color: 'var(--priority-high)',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
+            <Button variant="danger" size="sm" onClick={handleStopRepeating}>
               <StopCircle size={12} />
               Stop repeating
-            </button>
+            </Button>
           ) : (
             <span style={{ fontSize: 12, color: 'var(--text-placeholder)' }}>
               Press{' '}
@@ -372,31 +351,12 @@ export default function EditTaskOverlay({ task }: EditTaskOverlayProps) {
             </span>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={closeEditTask}
-              style={{
-                padding: '7px 14px', borderRadius: 8,
-                border: '1px solid var(--border-default)',
-                background: 'transparent', color: 'var(--text-sub)',
-                fontSize: 13, cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-            <button
+            <Button variant="outline" onClick={closeEditTask}>Cancel</Button>
+            <Button variant="primary"
               onClick={handleSave}
-              disabled={!title.trim() || isSaving || !isDirty}
-              style={{
-                padding: '7px 16px', borderRadius: 8, border: 'none',
-                background: isDirty && title.trim() ? 'var(--accent)' : 'var(--bg-chip)',
-                color: isDirty && title.trim() ? '#fff' : 'var(--text-placeholder)',
-                fontSize: 13, fontWeight: 600,
-                cursor: isDirty && title.trim() ? 'pointer' : 'default',
-                transition: 'all 0.15s ease',
-              }}
-            >
+              disabled={!title.trim() || isSaving || !isDirty}>
               {isSaving ? 'Saving…' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

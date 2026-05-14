@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { RefreshCw, Pencil, Trash2, Calendar, Tag } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
 import { formatDueDate, isOverdue } from '@/utils/formatDate';
@@ -40,6 +41,7 @@ export default function TaskCard({ task }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const updateTask   = useTaskStore((s) => s.updateTask);
   const completeTask = useTaskStore((s) => s.completeTask);
@@ -60,11 +62,17 @@ export default function TaskCard({ task }: TaskCardProps) {
   })();
 
   const handleStatusClick = async () => {
+    if (isCompleting) return;
     const next = NEXT_STATUS[task.status];
     if (next === 'done') {
-      const nextRecurring = await completeTask(task.id);
-      if (nextRecurring) {
-        toast.info(`🔁 Next: ${nextOccurrenceLabel(nextRecurring.dueDate ?? '')}`);
+      setIsCompleting(true);
+      try {
+        const nextRecurring = await completeTask(task.id);
+        if (nextRecurring) {
+          toast.info(`🔁 Next: ${nextOccurrenceLabel(nextRecurring.dueDate ?? '')}`);
+        }
+      } finally {
+        setIsCompleting(false);
       }
     } else {
       updateTask(task.id, { status: next, completedAt: undefined });
@@ -137,14 +145,17 @@ export default function TaskCard({ task }: TaskCardProps) {
         )}
         <button
           onClick={handleStatusClick}
+          disabled={isCompleting}
           onMouseEnter={() => setTooltipVisible(true)}
           onMouseLeave={() => setTooltipVisible(false)}
           style={{
             width: 18, height: 18, borderRadius: '50%',
             border: `2px solid ${STATUS_BORDER[task.status]}`,
             background: STATUS_BG[task.status],
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: isCompleting ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 0.15s ease', flexShrink: 0,
+            opacity: isCompleting ? 0.6 : 1,
           }}
         >
           {task.status === 'done' && (
@@ -207,34 +218,14 @@ export default function TaskCard({ task }: TaskCardProps) {
       {/* Hover actions */}
       {isHovered && !isDeleting && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button
-            onClick={() => openEditTask(task)}
-            title="Edit task"
-            style={{
-              width: 28, height: 28, borderRadius: 'var(--radius-sm)',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-sub)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
+          <Button variant="ghost" iconOnly size="sm"
+            onClick={() => openEditTask(task)} title="Edit task">
             <Pencil size={13} />
-          </button>
-          <button
-            onClick={handleDelete}
-            title="Delete task"
-            style={{
-              width: 28, height: 28, borderRadius: 'var(--radius-sm)',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-sub)', transition: 'all 0.12s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = 'var(--priority-high)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-sub)'; }}
-          >
+          </Button>
+          <Button variant="danger-ghost" iconOnly size="sm"
+            onClick={handleDelete} title="Delete task">
             <Trash2 size={13} />
-          </button>
+          </Button>
         </div>
       )}
     </div>

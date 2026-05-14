@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import Button from '@/components/ui/Button';
 
 // ── Toast store (singleton, no Zustand needed) ────────────────────────────
 
@@ -117,41 +118,19 @@ function ToastCard({ item }: { item: ToastItem }) {
 
       {/* Undo button */}
       {item.onUndo && (
-        <button
-          onClick={() => {
-            item.onUndo?.();
-            toast.dismiss(item.id);
-          }}
-          style={{
-            padding: '3px 10px',
-            borderRadius: 6,
-            border: '1.5px solid var(--priority-medium)',
-            background: 'transparent',
-            color: 'var(--priority-medium)',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-        >
+        <Button variant="outline" size="sm"
+          style={{ borderColor: 'var(--priority-medium)', color: 'var(--priority-medium)' }}
+          onClick={() => { item.onUndo?.(); toast.dismiss(item.id); }}>
           Undo
-        </button>
+        </Button>
       )}
 
       {/* Dismiss */}
-      <button
-        onClick={() => {
-          setVisible(false);
-          setTimeout(() => toast.dismiss(item.id), 250);
-        }}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--text-placeholder)', display: 'flex', flexShrink: 0,
-          padding: 0,
-        }}
-      >
+      <Button variant="ghost" iconOnly size="sm"
+        style={{ color: 'var(--text-placeholder)' }}
+        onClick={() => { setVisible(false); setTimeout(() => toast.dismiss(item.id), 250); }}>
         <X size={13} />
-      </button>
+      </Button>
     </div>
   );
 }

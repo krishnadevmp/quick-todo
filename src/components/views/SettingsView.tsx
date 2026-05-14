@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import Button from '@/components/ui/Button';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { TaskRepository } from '@/db/taskRepository';
 import { toast } from '@/components/ui/Toast';
@@ -21,21 +22,6 @@ const sectionTitle: React.CSSProperties = {
   marginBottom: 14,
 };
 
-const actionBtn: React.CSSProperties = {
-  padding: '7px 16px',
-  borderRadius: 8,
-  border: '1px solid var(--border-default)',
-  background: 'var(--bg-elevated)',
-  color: 'var(--text-primary)',
-  fontSize: 13,
-  fontWeight: 500,
-  cursor: 'pointer',
-};
-
-const dangerBtn: React.CSSProperties = {
-  borderColor: 'var(--priority-high)',
-  color: 'var(--priority-high)',
-};
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
@@ -71,6 +57,33 @@ function SettingRow({ label, description, last, children }: {
   );
 }
 
+function SegBtn({ selected, onClick, children }: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      style={{
+        padding: '5px 12px', borderRadius: 6, border: 'none',
+        fontSize: 13, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
+        background: selected ? 'var(--accent)' : 'transparent',
+        color: selected ? '#fff' : 'var(--text-sub)',
+        transition: 'background 0.15s, color 0.15s, transform 0.1s, opacity 0.1s',
+        transform: pressed ? 'scale(0.94)' : 'scale(1)',
+        opacity: pressed && !selected ? 0.7 : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function SegmentedControl<T extends string>({ value, options, onChange }: {
   value: T;
   options: { value: T; label: string }[];
@@ -85,26 +98,14 @@ function SegmentedControl<T extends string>({ value, options, onChange }: {
       padding: 3,
       gap: 2,
     }}>
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(opt.value)}
-          style={{
-            padding: '5px 12px',
-            borderRadius: 6,
-            border: 'none',
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-            background: value === opt.value ? 'var(--accent)' : 'transparent',
-            color: value === opt.value ? '#fff' : 'var(--text-sub)',
-            transition: 'background 0.15s, color 0.15s',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {opt.label}
-        </button>
-      ))}
+      {options.map((opt) => {
+        const sel = value === opt.value;
+        return (
+          <SegBtn key={opt.value} selected={sel} onClick={() => onChange(opt.value)}>
+            {opt.label}
+          </SegBtn>
+        );
+      })}
     </div>
   );
 }
@@ -293,7 +294,7 @@ export default function SettingsView() {
       <Section title="Data">
         <div style={card}>
           <SettingRow label="Export tasks" description="Download all tasks as a JSON file">
-            <button onClick={handleExport} style={actionBtn}>Export JSON</button>
+            <Button variant="outline" onClick={handleExport}>Export JSON</Button>
           </SettingRow>
           <SettingRow label="Import tasks" description="Merge tasks from a previously exported file">
             <>
@@ -304,15 +305,13 @@ export default function SettingsView() {
                 style={{ display: 'none' }}
                 onChange={handleImport}
               />
-              <button onClick={() => fileInputRef.current?.click()} style={actionBtn}>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                 Import JSON
-              </button>
+              </Button>
             </>
           </SettingRow>
           <SettingRow label="Clear completed" description="Permanently delete all done tasks" last>
-            <button onClick={handleClearCompleted} style={{ ...actionBtn, ...dangerBtn }}>
-              Clear
-            </button>
+            <Button variant="danger" onClick={handleClearCompleted}>Clear</Button>
           </SettingRow>
         </div>
       </Section>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import Button from "@/components/ui/Button";
 import { useTaskStore } from "@/stores/taskStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import FilterBar from "@/components/ui/FilterBar";
@@ -85,21 +86,7 @@ export default function AllView() {
           title="No tasks match your filters"
           subtitle="Try adjusting the filters or clearing them to see all tasks."
           action={
-            <button
-              onClick={resetFilter}
-              style={{
-                padding: "8px 16px",
-                borderRadius: "var(--radius-md)",
-                background: "var(--accent)",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 500,
-                border: "none",
-                cursor: "pointer",
-              }}
-            >
-              Clear filters
-            </button>
+            <Button variant="primary" onClick={resetFilter}>Clear filters</Button>
           }
         />
       ) : (

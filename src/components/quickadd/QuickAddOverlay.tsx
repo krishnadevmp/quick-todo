@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Tag, Flag, Calendar, Clock, RefreshCw, Bell } from 'lucide-react';
+import Button from '@/components/ui/Button';
 import { useUIStore } from '@/stores/uiStore';
 import { useTaskStore } from '@/stores/taskStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -171,19 +172,9 @@ export default function QuickAddOverlay() {
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
             New Task
           </span>
-          <button
-            onClick={closeQuickAdd}
-            style={{
-              width: 28, height: 28, borderRadius: 8, border: 'none',
-              background: 'transparent', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--text-sub)',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-elevated)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
+          <Button variant="ghost" iconOnly size="sm" onClick={closeQuickAdd} title="Close">
             <X size={15} />
-          </button>
+          </Button>
         </div>
 
         {/* ── Body ── */}
@@ -344,29 +335,12 @@ export default function QuickAddOverlay() {
             {' '}to save
           </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={closeQuickAdd}
-              style={{
-                padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border-default)',
-                background: 'transparent', color: 'var(--text-sub)',
-                fontSize: 13, cursor: 'pointer',
-              }}
-            >
-              Cancel
-            </button>
-            <button
+            <Button variant="outline" onClick={closeQuickAdd}>Cancel</Button>
+            <Button variant="primary"
               onClick={handleSubmit}
-              disabled={!title.trim() || isSubmitting}
-              style={{
-                padding: '7px 16px', borderRadius: 8, border: 'none',
-                background: title.trim() ? 'var(--accent)' : 'var(--bg-chip)',
-                color: title.trim() ? '#fff' : 'var(--text-placeholder)',
-                fontSize: 13, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'default',
-                transition: 'all 0.15s ease',
-              }}
-            >
+              disabled={!title.trim() || isSubmitting}>
               {isSubmitting ? 'Adding…' : 'Add Task'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

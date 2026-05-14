@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTaskStore } from '@/stores/taskStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import Button from '@/components/ui/Button';
 import TaskList from '@/components/task/TaskList';
 import EmptyState from '@/components/ui/EmptyState';
 import { EmptyIllustration } from '@/components/ui/EmptyIllustration';
@@ -25,21 +26,7 @@ export default function TodayView() {
         title="Nothing due today"
         subtitle="No tasks are due today. Add one to get started."
         action={
-          <button
-            onClick={openQuickAdd}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--accent)',
-              color: '#fff',
-              fontSize: 13,
-              fontWeight: 500,
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            + Add a task
-          </button>
+          <Button variant="primary" onClick={openQuickAdd}>+ Add a task</Button>
         }
       />
     );

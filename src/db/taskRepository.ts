@@ -127,35 +127,44 @@ export const TaskRepository = {
   /**
    * Mark a task done.  If the task has a recurring pattern, automatically
    * creates the next occurrence and returns it.
+   *
+   * Wrapped in a read-write transaction so concurrent double-taps cannot
+   * create duplicate occurrences — only the first call that finds the task
+   * still in a non-done state will proceed to spawn the next occurrence.
    */
   async complete(id: string): Promise<{ nextTask?: Task }> {
-    const task = await db.tasks.get(id);
-    if (!task) return {};
+    return db.transaction('rw', db.tasks, async () => {
+      const task = await db.tasks.get(id);
+      if (!task) return {};
 
-    const now = new Date().toISOString();
-    await db.tasks.update(id, { status: 'done', completedAt: now, updatedAt: now });
+      // Idempotency guard: if already done, do not spawn another occurrence.
+      if (task.status === 'done') return {};
 
-    if (task.recurring === 'none') return {};
+      const now = new Date().toISOString();
+      await db.tasks.update(id, { status: 'done', completedAt: now, updatedAt: now });
 
-    // Spawn the next occurrence
-    const nextDueDate = getNextOccurrence(task.dueDate, task.recurring as RecurringPattern);
-    const parentId    = task.recurringParentId ?? task.id;
+      if (task.recurring === 'none') return {};
 
-    const nextTask = await TaskRepository.create({
-      title:             task.title,
-      description:       task.description,
-      priority:          task.priority,
-      category:          task.category,
-      status:            'todo',
-      dueDate:           nextDueDate,
-      dueTime:           task.dueTime,
-      reminderOffset:    task.reminderOffset,
-      recurring:         task.recurring,
-      tags:              [...task.tags],
-      recurringParentId: parentId,
+      // Spawn the next occurrence
+      const nextDueDate = getNextOccurrence(task.dueDate, task.recurring as RecurringPattern);
+      const parentId    = task.recurringParentId ?? task.id;
+
+      const nextTask = await TaskRepository.create({
+        title:             task.title,
+        description:       task.description,
+        priority:          task.priority,
+        category:          task.category,
+        status:            'todo',
+        dueDate:           nextDueDate,
+        dueTime:           task.dueTime,
+        reminderOffset:    task.reminderOffset,
+        recurring:         task.recurring,
+        tags:              [...task.tags],
+        recurringParentId: parentId,
+      });
+
+      return { nextTask };
     });
-
-    return { nextTask };
   },
 
   async delete(id: string): Promise<void> {
