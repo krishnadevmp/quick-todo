@@ -50,14 +50,16 @@ export default function InstallBanner() {
           <div style={titleStyle}>Install Quick Todo</div>
           <div style={subtitleStyle}>Add to home screen for instant access</div>
         </div>
-        <Button variant="primary" size="sm" onClick={install}>Install</Button>
+        <Button variant="primary" size="sm" onClick={install}>
+          Install
+        </Button>
         <DismissBtn onClick={dismiss} />
       </div>
     );
   }
 
   // iOS / any browser that supports Web Share: guide user to "Add to Home Screen"
-  if (true && !standalone && !isDismissed) {
+  if (ios && !standalone && !isDismissed) {
     return (
       <div style={bannerStyle}>
         <IconBox
@@ -108,18 +110,30 @@ function IconBox({
 }) {
   if (onClick) {
     return (
-      <Button variant="primary" iconOnly size="md" onClick={onClick} title={title}>
+      <Button
+        variant="primary"
+        iconOnly
+        size="md"
+        onClick={onClick}
+        title={title}
+      >
         {children}
       </Button>
     );
   }
   return (
-    <div style={{
-      width: 34, height: 34, borderRadius: 10,
-      background: "var(--accent)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexShrink: 0,
-    }}>
+    <div
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        background: "var(--accent)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
       {children}
     </div>
   );
@@ -127,8 +141,14 @@ function IconBox({
 
 function DismissBtn({ onClick }: { onClick: () => void }) {
   return (
-    <Button variant="ghost" iconOnly size="sm" onClick={onClick} title="Dismiss"
-      style={{ color: "var(--text-placeholder)" }}>
+    <Button
+      variant="ghost"
+      iconOnly
+      size="sm"
+      onClick={onClick}
+      title="Dismiss"
+      style={{ color: "var(--text-placeholder)" }}
+    >
       <X size={14} />
     </Button>
   );
@@ -157,4 +177,3 @@ const subtitleStyle: React.CSSProperties = {
   fontSize: 11,
   color: "var(--text-sub)",
 };
-
