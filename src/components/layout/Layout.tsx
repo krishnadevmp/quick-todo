@@ -9,6 +9,7 @@ import TodayView from '@/components/views/TodayView';
 import UpcomingView from '@/components/views/UpcomingView';
 import AllView from '@/components/views/AllView';
 import DashboardView from '@/components/views/DashboardView';
+import ExpensesView from '@/components/views/ExpensesView';
 import SettingsView from '@/components/views/SettingsView';
 
 export default function Layout() {
@@ -20,6 +21,7 @@ export default function Layout() {
     upcoming:  <UpcomingView />,
     all:       <AllView />,
     dashboard: <DashboardView />,
+    expenses:  <ExpensesView />,
     settings:  <SettingsView />,
   };
 

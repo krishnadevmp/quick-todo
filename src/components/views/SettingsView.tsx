@@ -3,7 +3,8 @@ import Button from '@/components/ui/Button';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { TaskRepository } from '@/db/taskRepository';
 import { toast } from '@/components/ui/Toast';
-import type { Priority, ReminderOffset } from '@/types';
+import { CURRENCY_OPTIONS } from '@/utils/formatCurrency';
+import type { Priority, ReminderOffset, CurrencyCode } from '@/types';
 
 // ── Shared styles ─────────────────────────────────────────────────────────
 
@@ -110,6 +111,26 @@ function SegmentedControl<T extends string>({ value, options, onChange }: {
   );
 }
 
+function SelectControl<T extends string>({ value, options, onChange }: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      style={{
+        background: 'var(--bg-elevated)', color: 'var(--text-primary)',
+        border: '1px solid var(--border-default)', borderRadius: 8,
+        padding: '6px 10px', fontSize: 13, outline: 'none', cursor: 'pointer',
+      }}
+    >
+      {options.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+    </select>
+  );
+}
+
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
@@ -148,7 +169,7 @@ export default function SettingsView() {
   const {
     theme, updateSettings,
     defaultPriority, defaultReminderOffset,
-    showCompleted,
+    showCompleted, currency,
     notificationsEnabled, notificationPermission,
     requestNotificationPermission, disableNotifications,
   } = useSettingsStore();
@@ -261,6 +282,19 @@ export default function SettingsView() {
                 { value: '1440', label: '1d'   },
               ]}
               onChange={(v) => updateSettings({ defaultReminderOffset: v })}
+            />
+          </SettingRow>
+        </div>
+      </Section>
+
+      {/* Expenses */}
+      <Section title="Expenses">
+        <div style={card}>
+          <SettingRow label="Currency" description="Used to display and enter expense amounts" last>
+            <SelectControl<CurrencyCode>
+              value={currency}
+              options={CURRENCY_OPTIONS}
+              onChange={(v) => updateSettings({ currency: v })}
             />
           </SettingRow>
         </div>

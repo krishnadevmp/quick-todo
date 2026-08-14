@@ -6,6 +6,7 @@ import { schedulePendingNotifications } from '@/utils/notificationScheduler';
 import Layout from '@/components/layout/Layout';
 import QuickAddOverlay from '@/components/quickadd/QuickAddOverlay';
 import EditTaskOverlay from '@/components/task/EditTaskOverlay';
+import ExpenseFormOverlay from '@/components/expense/ExpenseFormOverlay';
 import { ToastContainer } from '@/components/ui/Toast';
 
 export default function App() {
@@ -14,6 +15,8 @@ export default function App() {
   const notificationPermission = useSettingsStore((s) => s.notificationPermission);
   const isQuickAddOpen        = useUIStore((s) => s.isQuickAddOpen);
   const editingTask           = useUIStore((s) => s.editingTask);
+  const isAddExpenseOpen      = useUIStore((s) => s.isAddExpenseOpen);
+  const editingExpense        = useUIStore((s) => s.editingExpense);
 
   // Apply persisted theme on first render
   useEffect(() => { applyTheme(); }, [applyTheme]);
@@ -33,8 +36,10 @@ export default function App() {
   return (
     <>
       <Layout />
-      {isQuickAddOpen && <QuickAddOverlay />}
-      {editingTask    && <EditTaskOverlay task={editingTask} />}
+      {isQuickAddOpen   && <QuickAddOverlay />}
+      {editingTask      && <EditTaskOverlay task={editingTask} />}
+      {isAddExpenseOpen && <ExpenseFormOverlay />}
+      {editingExpense   && <ExpenseFormOverlay expense={editingExpense} />}
       <ToastContainer />
     </>
   );

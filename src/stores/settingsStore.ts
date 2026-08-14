@@ -81,6 +81,7 @@ export const useSettingsStore = create<SettingsState>()(
         defaultReminderOffset:  s.defaultReminderOffset,
         defaultPriority:        s.defaultPriority,
         showCompleted:          s.showCompleted,
+        currency:               s.currency,
       }),
     }
   )

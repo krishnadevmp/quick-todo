@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, Calendar, LayoutList, BarChart2, Settings } from 'lucide-react';
+import { CalendarDays, Calendar, LayoutList, BarChart2, Wallet, Settings } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { TaskRepository } from '@/db/taskRepository';
+import { ExpenseRepository } from '@/db/expenseRepository';
 import type { ViewId } from '@/types';
 
 const NAV_ITEMS: { id: ViewId; label: string; icon: React.ComponentType<{ size?: number; strokeWidth?: number }> }[] = [
@@ -9,6 +10,7 @@ const NAV_ITEMS: { id: ViewId; label: string; icon: React.ComponentType<{ size?:
   { id: 'upcoming',  label: 'Upcoming', icon: Calendar     },
   { id: 'all',       label: 'All',      icon: LayoutList   },
   { id: 'dashboard', label: 'Stats',    icon: BarChart2    },
+  { id: 'expenses',  label: 'Expenses', icon: Wallet       },
   { id: 'settings',  label: 'Settings', icon: Settings     },
 ];
 
@@ -48,11 +50,13 @@ export default function BottomNav() {
   const activeView   = useUIStore((s) => s.activeView);
   const setView      = useUIStore((s) => s.setView);
   const [todayCount, setTodayCount] = useState(0);
+  const [expensesThisMonthCount, setExpensesThisMonthCount] = useState(0);
 
   useEffect(() => {
     TaskRepository.getToday().then((tasks) =>
       setTodayCount(tasks.filter((t) => t.status !== 'done').length)
     );
+    ExpenseRepository.getThisMonthCount().then(setExpensesThisMonthCount);
   }, [activeView]);
 
   return (
@@ -68,12 +72,13 @@ export default function BottomNav() {
     }}>
       {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
         const active = activeView === id;
+        const badgeCount = id === 'today' ? todayCount : id === 'expenses' ? expensesThisMonthCount : 0;
         return (
           <BottomNavItem key={id} active={active} onClick={() => setView(id)}>
             <Icon size={20} strokeWidth={active ? 2.5 : 2} />
             <span style={{ fontSize: 10, fontWeight: active ? 600 : 400 }}>{label}</span>
 
-            {id === 'today' && todayCount > 0 && (
+            {badgeCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: 4,
@@ -84,7 +89,7 @@ export default function BottomNav() {
                 background: 'var(--accent)', color: '#fff',
                 minWidth: 14, textAlign: 'center',
               }}>
-                {todayCount > 99 ? '99+' : todayCount}
+                {badgeCount > 99 ? '99+' : badgeCount}
               </span>
             )}
           </BottomNavItem>

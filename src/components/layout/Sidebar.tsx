@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, Calendar, LayoutList, BarChart2, Settings, Plus } from 'lucide-react';
+import { CalendarDays, Calendar, LayoutList, BarChart2, Wallet, Settings, Plus, ChevronDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import AddMenu from './AddMenu';
 import { useUIStore } from '@/stores/uiStore';
 import { TaskRepository } from '@/db/taskRepository';
+import { ExpenseRepository } from '@/db/expenseRepository';
 import type { ViewId } from '@/types';
 
 const NAV_ITEMS: {
@@ -14,6 +16,7 @@ const NAV_ITEMS: {
   { id: 'upcoming',  label: 'Upcoming',  icon: Calendar     },
   { id: 'all',       label: 'All Tasks', icon: LayoutList   },
   { id: 'dashboard', label: 'Dashboard', icon: BarChart2    },
+  { id: 'expenses',  label: 'Expenses',  icon: Wallet       },
   { id: 'settings',  label: 'Settings',  icon: Settings     },
 ];
 
@@ -59,13 +62,14 @@ function NavItem({ active, onClick, children }: {
 export default function Sidebar() {
   const activeView = useUIStore((s) => s.activeView);
   const setView    = useUIStore((s) => s.setView);
-  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   const [todayCount, setTodayCount] = useState(0);
+  const [expensesThisMonthCount, setExpensesThisMonthCount] = useState(0);
 
   useEffect(() => {
     TaskRepository.getToday().then((tasks) =>
       setTodayCount(tasks.filter((t) => t.status !== 'done').length)
     );
+    ExpenseRepository.getThisMonthCount().then(setExpensesThisMonthCount);
   }, [activeView]);
 
   return (
@@ -96,26 +100,34 @@ export default function Sidebar() {
         </span>
       </div>
 
-      {/* Add Task button */}
+      {/* Add button — opens a New Task / New Expense picker */}
       <div style={{ padding: '0 12px 16px' }}>
-        <Button variant="primary" onClick={openQuickAdd}
-          style={{ width: '100%', borderRadius: 9, padding: '9px 12px' }}>
-          <Plus size={15} strokeWidth={2.5} />
-          Add Task
-        </Button>
+        <AddMenu
+          align="left" direction="down"
+          wrapperStyle={{ width: '100%' }}
+          trigger={({ toggle }) => (
+            <Button variant="primary" onClick={toggle}
+              style={{ width: '100%', borderRadius: 9, padding: '9px 12px' }}>
+              <Plus size={15} strokeWidth={2.5} />
+              Add
+              <ChevronDown size={12} style={{ marginLeft: 'auto' }} />
+            </Button>
+          )}
+        />
       </div>
 
       {/* Nav items */}
       <nav style={{ flex: 1, padding: '0 8px' }}>
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
           const active = activeView === id;
+          const badgeCount = id === 'today' ? todayCount : id === 'expenses' ? expensesThisMonthCount : 0;
           return (
             <NavItem key={id} active={active} onClick={() => setView(id)}>
               <Icon size={15} strokeWidth={active ? 2.5 : 2} />
               <span style={{ flex: 1 }}>{label}</span>
 
-              {/* Today count badge */}
-              {id === 'today' && todayCount > 0 && (
+              {/* Count badge — Today: pending tasks due today, Expenses: logged this month */}
+              {badgeCount > 0 && (
                 <span style={{
                   fontSize: 10, fontWeight: 700,
                   padding: '2px 6px', borderRadius: 20,
@@ -123,7 +135,7 @@ export default function Sidebar() {
                   color: active ? '#fff' : 'var(--text-sub)',
                   minWidth: 18, textAlign: 'center',
                 }}>
-                  {todayCount > 99 ? '99+' : todayCount}
+                  {badgeCount > 99 ? '99+' : badgeCount}
                 </span>
               )}
             </NavItem>

@@ -1,5 +1,6 @@
-import { Plus, Sun, Moon, Bell, BellOff, BellRing, WifiOff } from 'lucide-react';
+import { Plus, ChevronDown, Sun, Moon, Bell, BellOff, BellRing, WifiOff } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import AddMenu from './AddMenu';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -11,6 +12,7 @@ const VIEW_TITLES: Record<string, string> = {
   upcoming:  'Upcoming',
   all:       'All Tasks',
   dashboard: 'Dashboard',
+  expenses:  'Expenses',
   settings:  'Settings',
 };
 
@@ -91,7 +93,6 @@ function NotificationBell() {
 
 export default function Topbar() {
   const activeView   = useUIStore((s) => s.activeView);
-  const openQuickAdd = useUIStore((s) => s.openQuickAdd);
   const { theme, updateSettings } = useSettingsStore();
   const isMobile     = useIsMobile();
   const isOnline     = useOnlineStatus();
@@ -158,12 +159,18 @@ export default function Topbar() {
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </Button>
 
-        {/* New task button — hidden on mobile (FAB handles it) */}
+        {/* New task/expense picker — hidden on mobile (FAB handles it) */}
         {!isMobile && (
-          <Button variant="primary" onClick={openQuickAdd}>
-            <Plus size={14} strokeWidth={2.5} />
-            New
-          </Button>
+          <AddMenu
+            align="right" direction="down"
+            trigger={({ toggle }) => (
+              <Button variant="primary" onClick={toggle}>
+                <Plus size={14} strokeWidth={2.5} />
+                New
+                <ChevronDown size={11} />
+              </Button>
+            )}
+          />
         )}
       </div>
     </header>

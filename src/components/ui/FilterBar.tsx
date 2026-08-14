@@ -1,6 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Search, X, ChevronDown, ArrowUpDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import Menu, { MenuItem } from '@/components/ui/Menu';
 import { useTaskStore } from '@/stores/taskStore';
 import type { Priority, Category, SortBy } from '@/types';
 
@@ -66,87 +67,50 @@ function TagFilter({ allTags, selectedTags, onToggle }: {
   selectedTags: string[];
   onToggle: (tag: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   if (allTags.length === 0) return null;
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <Button
-        onClick={() => setOpen((o) => !o)}
-        variant={selectedTags.length > 0 ? "primary" : "outline"}
-        size="sm"
-        style={{
-          borderRadius: 20,
-          fontWeight: selectedTags.length > 0 ? 600 : 400,
-          border: `1.5px solid ${selectedTags.length > 0 ? 'var(--accent)' : 'var(--border-default)'}`,
-        }}
-      >
-        Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
-        <ChevronDown size={11} />
-      </Button>
-
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          left: 0,
-          zIndex: 20,
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          minWidth: 160,
-          padding: '6px 0',
-        }}>
-          {allTags.map((tag) => {
-            const checked = selectedTags.includes(tag);
-            return (
-              <Button
-                key={tag}
-                variant="ghost"
-                onClick={() => onToggle(tag)}
-                style={{
-                  justifyContent: 'flex-start',
-                  gap: 8,
-                  width: '100%',
-                  padding: '6px 12px',
-                  borderRadius: 0,
-                  background: checked ? 'var(--accent-soft)' : undefined,
-                  color: checked ? 'var(--accent)' : 'var(--text-primary)',
-                  fontSize: 13,
-                }}
-              >
-                <span style={{
-                  width: 14, height: 14,
-                  borderRadius: 3,
-                  border: `1.5px solid ${checked ? 'var(--accent)' : 'var(--border-default)'}`,
-                  background: checked ? 'var(--accent)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  {checked && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                      <path d="M1.5 4l2 2L6.5 2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                #{tag}
-              </Button>
-            );
-          })}
-        </div>
+    <Menu
+      align="left"
+      trigger={({ toggle }) => (
+        <Button
+          onClick={toggle}
+          variant={selectedTags.length > 0 ? "primary" : "outline"}
+          size="sm"
+          style={{
+            borderRadius: 20,
+            fontWeight: selectedTags.length > 0 ? 600 : 400,
+            border: `1.5px solid ${selectedTags.length > 0 ? 'var(--accent)' : 'var(--border-default)'}`,
+          }}
+        >
+          Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+          <ChevronDown size={11} />
+        </Button>
       )}
-    </div>
+    >
+      {allTags.map((tag) => {
+        const checked = selectedTags.includes(tag);
+        return (
+          <MenuItem key={tag} closeOnClick={false} onClick={() => onToggle(tag)}>
+            <span style={{
+              width: 14, height: 14,
+              borderRadius: 3,
+              border: `1.5px solid ${checked ? 'var(--accent)' : 'var(--border-default)'}`,
+              background: checked ? 'var(--accent)' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              {checked && (
+                <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                  <path d="M1.5 4l2 2L6.5 2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </span>
+            #{tag}
+          </MenuItem>
+        );
+      })}
+    </Menu>
   );
 }
 
@@ -157,72 +121,41 @@ function SortControl({ sortBy, sortDir, onChange }: {
   sortDir: 'asc' | 'desc';
   onChange: (sortBy: SortBy, sortDir: 'asc' | 'desc') => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
   const current = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
 
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   return (
-    <div ref={ref} style={{ position: 'relative', marginLeft: 'auto' }}>
-      <Button
-        onClick={() => setOpen((o) => !o)}
-        variant="outline"
-        size="sm"
-        style={{ borderRadius: 20, border: '1.5px solid var(--border-default)', whiteSpace: 'nowrap' }}
-      >
-        <ArrowUpDown size={11} />
-        {current}
-      </Button>
-
-      {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 6px)',
-          right: 0,
-          zIndex: 20,
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          minWidth: 160,
-          padding: '6px 0',
-        }}>
-          {SORT_OPTIONS.map((opt) => (
-            <Button
-              key={opt.value}
-              variant="ghost"
-              onClick={() => {
-                const newDir = opt.value === sortBy && sortDir === 'desc' ? 'asc' : 'desc';
-                onChange(opt.value, newDir);
-                setOpen(false);
-              }}
-              style={{
-                justifyContent: 'space-between',
-                width: '100%',
-                padding: '6px 12px',
-                borderRadius: 0,
-                background: sortBy === opt.value ? 'var(--accent-soft)' : undefined,
-                color: sortBy === opt.value ? 'var(--accent)' : 'var(--text-primary)',
-                fontSize: 13,
-                fontWeight: sortBy === opt.value ? 600 : 400,
-              }}
-            >
-              {opt.label}
-              {sortBy === opt.value && (
-                <span style={{ fontSize: 11 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
-              )}
-            </Button>
-          ))}
-        </div>
+    <Menu
+      align="right"
+      wrapperStyle={{ marginLeft: 'auto' }}
+      trigger={({ toggle }) => (
+        <Button
+          onClick={toggle}
+          variant="outline"
+          size="sm"
+          style={{ borderRadius: 20, border: '1.5px solid var(--border-default)', whiteSpace: 'nowrap' }}
+        >
+          <ArrowUpDown size={11} />
+          {current}
+        </Button>
       )}
-    </div>
+    >
+      {SORT_OPTIONS.map((opt) => (
+        <MenuItem
+          key={opt.value}
+          active={sortBy === opt.value}
+          style={{ justifyContent: 'space-between', fontWeight: sortBy === opt.value ? 600 : 400 }}
+          onClick={() => {
+            const newDir = opt.value === sortBy && sortDir === 'desc' ? 'asc' : 'desc';
+            onChange(opt.value, newDir);
+          }}
+        >
+          {opt.label}
+          {sortBy === opt.value && (
+            <span style={{ fontSize: 11 }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+          )}
+        </MenuItem>
+      ))}
+    </Menu>
   );
 }
 

@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-export type IllustrationVariant = "tasks" | "search" | "upcoming" | "stats";
+export type IllustrationVariant = "tasks" | "search" | "upcoming" | "stats" | "wallet";
 
 // ── SVG illustrations ─────────────────────────────────────────────────────
 
@@ -304,6 +304,53 @@ function StatsSVG() {
   );
 }
 
+function WalletSVG() {
+  return (
+    <svg
+      width="96"
+      height="96"
+      viewBox="0 0 96 96"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* Wallet body */}
+      <rect
+        x="10"
+        y="26"
+        width="76"
+        height="52"
+        rx="10"
+        fill="var(--bg-elevated)"
+        stroke="var(--border-default)"
+        strokeWidth="2"
+      />
+      {/* Fold flap */}
+      <path
+        d="M10 40 L10 34 Q10 26 18 26 L70 26 Q78 26 78 34 L78 40 Z"
+        fill="var(--accent)"
+        fillOpacity="0.15"
+      />
+      <line x1="10" y1="40" x2="78" y2="40" stroke="var(--border-default)" strokeWidth="2" />
+      {/* Card pocket flap */}
+      <rect
+        x="54"
+        y="46"
+        width="32"
+        height="22"
+        rx="6"
+        fill="var(--bg-surface)"
+        stroke="var(--border-default)"
+        strokeWidth="1.5"
+      />
+      {/* Coin / clasp */}
+      <circle cx="70" cy="57" r="6" fill="var(--accent)" fillOpacity="0.2" stroke="var(--accent)" strokeWidth="1.5" />
+      {/* Cash lines */}
+      <line x1="20" y1="54" x2="42" y2="54" stroke="var(--border-default)" strokeWidth="2" strokeLinecap="round" />
+      <line x1="20" y1="63" x2="36" y2="63" stroke="var(--border-default)" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // ── Export ────────────────────────────────────────────────────────────────
 
 const svgs: Record<IllustrationVariant, () => JSX.Element> = {
@@ -311,6 +358,7 @@ const svgs: Record<IllustrationVariant, () => JSX.Element> = {
   search: SearchSVG,
   upcoming: UpcomingSVG,
   stats: StatsSVG,
+  wallet: WalletSVG,
 };
 
 export function EmptyIllustration({
