@@ -1,8 +1,10 @@
-import { Plus, ChevronDown, Sun, Moon, Bell, BellOff, BellRing, WifiOff } from 'lucide-react';
+import { Plus, ChevronDown, Sun, Moon, Bell, BellOff, BellRing, WifiOff, UserCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import AddMenu from './AddMenu';
+import AvatarMenu from './AvatarMenu';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { toast } from '@/components/ui/Toast';
@@ -96,6 +98,7 @@ export default function Topbar() {
   const { theme, updateSettings } = useSettingsStore();
   const isMobile     = useIsMobile();
   const isOnline     = useOnlineStatus();
+  const authMode     = useAuthStore((s) => s.mode);
 
   const toggleTheme = () => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' });
 
@@ -128,6 +131,25 @@ export default function Topbar() {
 
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+        {/* Guest mode — persistent reminder that data is local-only */}
+        {authMode === 'guest' && (
+          <div
+            title="You're using Quick Todo as a guest — data stays on this device"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '4px 9px',
+              borderRadius: 20,
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-sub)',
+              fontSize: 11, fontWeight: 600,
+            }}
+          >
+            <UserCircle size={12} />
+            {isMobile ? 'Guest' : 'Guest · Local only'}
+          </div>
+        )}
 
         {/* Offline badge */}
         {!isOnline && (
@@ -172,6 +194,9 @@ export default function Topbar() {
             )}
           />
         )}
+
+        {/* Avatar — opens the account drawer (settings, sign out / sign in) */}
+        <AvatarMenu />
       </div>
     </header>
   );

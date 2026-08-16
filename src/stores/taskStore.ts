@@ -6,6 +6,18 @@ import {
   cancelNotification,
   rescheduleNotification,
 } from '@/utils/notificationScheduler';
+import { useAuthStore } from './authStore';
+import * as outbox from '@/sync/outbox';
+import { flushOutbox } from '@/sync/syncEngine';
+
+/** Best-effort: queue + push these task ids when signed in. Never blocks
+ *  or throws — offline/guest just leaves the write local, as intended. */
+function syncTasks(ids: string[], op: 'upsert' | 'delete') {
+  if (useAuthStore.getState().mode !== 'account' || ids.length === 0) return;
+  Promise.all(ids.map((id) => outbox.enqueue('task', id, op)))
+    .then(() => flushOutbox())
+    .catch(() => {});
+}
 
 type SeriesChanges = Partial<Omit<Task, 'id' | 'createdAt' | 'dueDate' | 'status' | 'completedAt' | 'recurringParentId'>>;
 
@@ -92,6 +104,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const task = await TaskRepository.create(partial);
     set((s) => ({ tasks: [task, ...s.tasks] }));
     scheduleNotification(task);
+    syncTasks([task.id], 'upsert');
     return task;
   },
 
@@ -105,6 +118,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }));
     const updated = get().tasks.find((t) => t.id === id);
     if (updated) rescheduleNotification(updated);
+    syncTasks([id], 'upsert');
   },
 
   completeTask: async (id) => {
@@ -120,6 +134,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     }));
     cancelNotification(id);
     if (nextTask) scheduleNotification(nextTask);
+    // Pushed via the same idempotent upsert path (POST /tasks/import) rather
+    // than ever calling the server's own /complete — that endpoint spawns
+    // its own next occurrence independently, which would double-spawn since
+    // TaskRepository.complete() above already spawned one locally.
+    syncTasks(nextTask ? [id, nextTask.id] : [id], 'upsert');
     return nextTask;
   },
 
@@ -130,33 +149,39 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       overdueTasks: s.overdueTasks.filter((t) => t.id !== id),
     }));
     cancelNotification(id);
+    syncTasks([id], 'delete');
   },
 
   stopRecurring: async (id) => {
     await TaskRepository.stopRecurring(id);
     const now = new Date().toISOString();
+    const affected = new Set<string>();
     set((s) => {
       // Find the root parentId for this task
       const task     = s.tasks.find((t) => t.id === id) ?? s.overdueTasks.find((t) => t.id === id);
       const parentId = task ? (task.recurringParentId ?? id) : id;
-      const patch    = (t: Task) =>
-        (t.id === id || t.recurringParentId === parentId) && t.status !== 'done'
-          ? { ...t, recurring: 'none' as const, updatedAt: now }
-          : t;
+      const patch    = (t: Task) => {
+        if ((t.id !== id && t.recurringParentId !== parentId) || t.status === 'done') return t;
+        affected.add(t.id);
+        return { ...t, recurring: 'none' as const, updatedAt: now };
+      };
       return { tasks: s.tasks.map(patch), overdueTasks: s.overdueTasks.map(patch) };
     });
+    syncTasks([...affected], 'upsert');
   },
 
   updateTaskSeries: async (id, changes) => {
     await TaskRepository.updateSeries(id, changes);
     const now = new Date().toISOString();
+    const affected = new Set<string>();
     set((s) => {
       const task     = s.tasks.find((t) => t.id === id) ?? s.overdueTasks.find((t) => t.id === id);
       const parentId = task ? (task.recurringParentId ?? id) : id;
-      const patch    = (t: Task) =>
-        (t.id === id || t.recurringParentId === parentId) && t.status !== 'done'
-          ? { ...t, ...changes, updatedAt: now }
-          : t;
+      const patch    = (t: Task) => {
+        if ((t.id !== id && t.recurringParentId !== parentId) || t.status === 'done') return t;
+        affected.add(t.id);
+        return { ...t, ...changes, updatedAt: now };
+      };
       return { tasks: s.tasks.map(patch), overdueTasks: s.overdueTasks.map(patch) };
     });
     // Reschedule notifications for all affected in-memory tasks
@@ -168,6 +193,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         .filter((t) => t.id === id || t.recurringParentId === parentId)
         .forEach(rescheduleNotification);
     }
+    syncTasks([...affected], 'upsert');
   },
 
   setFilter: (partial) =>

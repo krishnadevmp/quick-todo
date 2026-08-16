@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '@/components/ui/Button';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { useAuthStore } from '@/stores/authStore';
 import { TaskRepository } from '@/db/taskRepository';
 import { toast } from '@/components/ui/Toast';
 import { CURRENCY_OPTIONS } from '@/utils/formatCurrency';
@@ -174,6 +176,10 @@ export default function SettingsView() {
     requestNotificationPermission, disableNotifications,
   } = useSettingsStore();
 
+  const navigate  = useNavigate();
+  const authMode  = useAuthStore((s) => s.mode);
+  const user      = useAuthStore((s) => s.user);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Notification toggle ────────────────────────────────────────────────
@@ -237,6 +243,25 @@ export default function SettingsView() {
 
   return (
     <div style={{ maxWidth: 640 }}>
+
+      {/* Account */}
+      <Section title="Account">
+        <div style={card}>
+          {authMode === 'account' && user ? (
+            <SettingRow label={`Signed in as ${user.name}`} description={user.email} last>
+              <Button variant="outline" onClick={() => navigate('/account')}>Manage account</Button>
+            </SettingRow>
+          ) : (
+            <SettingRow
+              label="Using Quick Todo as a guest"
+              description="Data is stored on this device only. Create a free account to sync across devices."
+              last
+            >
+              <Button variant="primary" onClick={() => navigate('/signup')}>Create account</Button>
+            </SettingRow>
+          )}
+        </div>
+      </Section>
 
       {/* Appearance */}
       <Section title="Appearance">

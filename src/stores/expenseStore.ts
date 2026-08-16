@@ -1,10 +1,19 @@
 import { create } from 'zustand';
 import type { Expense } from '@/types';
 import { ExpenseRepository } from '@/db/expenseRepository';
+import { useAuthStore } from './authStore';
+import * as outbox from '@/sync/outbox';
+import { flushOutbox } from '@/sync/syncEngine';
 
 /** date desc, then createdAt desc within the same date — matches ExpenseRepository.getAll */
 function byDateDesc(a: Expense, b: Expense): number {
   return b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt);
+}
+
+/** Best-effort: queue + push this expense id when signed in. */
+function syncExpense(id: string, op: 'upsert' | 'delete') {
+  if (useAuthStore.getState().mode !== 'account') return;
+  outbox.enqueue('expense', id, op).then(() => flushOutbox()).catch(() => {});
 }
 
 interface ExpenseState {
@@ -36,6 +45,7 @@ export const useExpenseStore = create<ExpenseState>((set) => ({
   addExpense: async (partial) => {
     const expense = await ExpenseRepository.create(partial);
     set((s) => ({ expenses: [...s.expenses, expense].sort(byDateDesc) }));
+    syncExpense(expense.id, 'upsert');
     return expense;
   },
 
@@ -47,10 +57,12 @@ export const useExpenseStore = create<ExpenseState>((set) => ({
         .map((e) => (e.id === id ? { ...e, ...changes, updatedAt: now } : e))
         .sort(byDateDesc),
     }));
+    syncExpense(id, 'upsert');
   },
 
   deleteExpense: async (id) => {
     await ExpenseRepository.delete(id);
     set((s) => ({ expenses: s.expenses.filter((e) => e.id !== id) }));
+    syncExpense(id, 'delete');
   },
 }));

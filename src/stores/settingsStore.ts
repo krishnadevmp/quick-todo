@@ -3,6 +3,15 @@ import { persist } from 'zustand/middleware';
 import type { AppSettings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types';
 import { cancelAllNotifications } from '@/utils/notificationScheduler';
+import { useAuthStore } from './authStore';
+import * as outbox from '@/sync/outbox';
+import { flushOutbox } from '@/sync/syncEngine';
+
+/** Settings are a single row server-side — one fixed outbox entity id. */
+function syncSettings() {
+  if (useAuthStore.getState().mode !== 'account') return;
+  outbox.enqueue('settings', 'settings', 'upsert').then(() => flushOutbox()).catch(() => {});
+}
 
 export type PermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
 
@@ -40,6 +49,7 @@ export const useSettingsStore = create<SettingsState>()(
       updateSettings: (partial) => {
         set((s) => ({ ...s, ...partial }));
         get().applyTheme();
+        syncSettings();
       },
 
       applyTheme: () => {
@@ -63,6 +73,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({ notificationPermission: perm });
         if (perm === 'granted') {
           set({ notificationsEnabled: true });
+          syncSettings();
         }
         return perm;
       },
@@ -70,6 +81,7 @@ export const useSettingsStore = create<SettingsState>()(
       disableNotifications: () => {
         set({ notificationsEnabled: false });
         cancelAllNotifications();
+        syncSettings();
       },
     }),
     {

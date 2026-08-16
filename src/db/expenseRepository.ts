@@ -50,4 +50,22 @@ export const ExpenseRepository = {
   async delete(id: string): Promise<void> {
     await db.expenses.delete(id);
   },
+
+  // ── Sync support ────────────────────────────────────────────────────────
+
+  /**
+   * Replace a locally-generated id with the server-assigned one once an
+   * expense has been created via POST /expenses (which, unlike /tasks,
+   * always mints its own id — see src/sync/syncEngine.ts). Returns the
+   * re-keyed record, or undefined if `oldId` no longer exists locally.
+   */
+  async rekey(oldId: string, serverExpense: Expense): Promise<Expense | undefined> {
+    return db.transaction('rw', db.expenses, async () => {
+      const existing = await db.expenses.get(oldId);
+      if (!existing) return undefined;
+      await db.expenses.delete(oldId);
+      await db.expenses.put(serverExpense);
+      return serverExpense;
+    });
+  },
 };
