@@ -6,7 +6,11 @@ import type { Task, AppSettings, Expense } from '@/types';
 // (authStore.mode === 'account') — guest mode never writes to this table.
 
 export type SyncEntity = 'task' | 'expense' | 'settings';
-export type SyncOp = 'upsert' | 'delete';
+// 'insert' is distinct from 'upsert': it marks a row that has never been
+// pushed to the server, so the sync engine can go straight to POST instead
+// of speculatively PATCHing an id the server has never heard of (a
+// guaranteed 404 on every newly-created expense — see syncEngine.ts).
+export type SyncOp = 'upsert' | 'insert' | 'delete';
 
 export interface SyncQueueItem {
   /** entity + entityId, e.g. "task:<uuid>" — also the Dexie primary key, so

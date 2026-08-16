@@ -11,7 +11,7 @@ function byDateDesc(a: Expense, b: Expense): number {
 }
 
 /** Best-effort: queue + push this expense id when signed in. */
-function syncExpense(id: string, op: 'upsert' | 'delete') {
+function syncExpense(id: string, op: 'upsert' | 'insert' | 'delete') {
   if (useAuthStore.getState().mode !== 'account') return;
   outbox.enqueue('expense', id, op).then(() => flushOutbox()).catch(() => {});
 }
@@ -45,7 +45,7 @@ export const useExpenseStore = create<ExpenseState>((set) => ({
   addExpense: async (partial) => {
     const expense = await ExpenseRepository.create(partial);
     set((s) => ({ expenses: [...s.expenses, expense].sort(byDateDesc) }));
-    syncExpense(expense.id, 'upsert');
+    syncExpense(expense.id, 'insert');
     return expense;
   },
 

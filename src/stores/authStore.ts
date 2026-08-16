@@ -34,75 +34,91 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      mode: null,
-      hasOnboarded: false,
-      isLoading: false,
-      error: null,
+    (set, get) => {
+      // Dedupes concurrent refreshMe() calls into a single in-flight request.
+      // Needed because RequireSession's mount effect calls refreshMe() and,
+      // under React StrictMode (dev only), that effect runs mount→cleanup→
+      // mount — the `cancelled` flag there only skips the *follow-up*
+      // pullFromServer/startAutoSync, not this call itself, so without a
+      // dedupe guard GET /auth/me would fire twice on every session start.
+      let refreshMePromise: Promise<void> | null = null;
 
-      signup: async (name, email, password) => {
-        set({ isLoading: true, error: null });
-        try {
-          const { user, token } = await authApi.signup(name, email, password);
-          set({ user, token, mode: 'account', hasOnboarded: true, isLoading: false });
-        } catch (e) {
-          set({ error: e instanceof ApiError ? e.message : 'Sign up failed', isLoading: false });
-          throw e;
-        }
-      },
+      return {
+        user: null,
+        token: null,
+        mode: null,
+        hasOnboarded: false,
+        isLoading: false,
+        error: null,
 
-      login: async (email, password) => {
-        set({ isLoading: true, error: null });
-        try {
-          const { user, token } = await authApi.login(email, password);
-          set({ user, token, mode: 'account', hasOnboarded: true, isLoading: false });
-        } catch (e) {
-          set({ error: e instanceof ApiError ? e.message : 'Log in failed', isLoading: false });
-          throw e;
-        }
-      },
+        signup: async (name, email, password) => {
+          set({ isLoading: true, error: null });
+          try {
+            const { user, token } = await authApi.signup(name, email, password);
+            set({ user, token, mode: 'account', hasOnboarded: true, isLoading: false });
+          } catch (e) {
+            set({ error: e instanceof ApiError ? e.message : 'Sign up failed', isLoading: false });
+            throw e;
+          }
+        },
 
-      logout: () => {
-        set({ user: null, token: null, mode: null, error: null });
-      },
+        login: async (email, password) => {
+          set({ isLoading: true, error: null });
+          try {
+            const { user, token } = await authApi.login(email, password);
+            set({ user, token, mode: 'account', hasOnboarded: true, isLoading: false });
+          } catch (e) {
+            set({ error: e instanceof ApiError ? e.message : 'Log in failed', isLoading: false });
+            throw e;
+          }
+        },
 
-      continueAsGuest: () => {
-        set({ user: null, token: null, mode: 'guest', hasOnboarded: true, error: null });
-      },
+        logout: () => {
+          set({ user: null, token: null, mode: null, error: null });
+        },
 
-      refreshMe: async () => {
-        const { token } = get();
-        if (!token) return;
-        try {
-          const { user } = await authApi.me();
-          set({ user });
-        } catch {
-          // handleUnauthorized() already ran via the client on a 401;
-          // other failures (offline) are ignored — keep using the cached user.
-        }
-      },
+        continueAsGuest: () => {
+          set({ user: null, token: null, mode: 'guest', hasOnboarded: true, error: null });
+        },
 
-      changePassword: async (currentPassword, newPassword) => {
-        set({ isLoading: true, error: null });
-        try {
-          await authApi.changePassword(currentPassword, newPassword);
-          set({ isLoading: false });
-        } catch (e) {
-          set({ error: e instanceof ApiError ? e.message : 'Could not change password', isLoading: false });
-          throw e;
-        }
-      },
+        refreshMe: () => {
+          if (refreshMePromise) return refreshMePromise;
+          const { token } = get();
+          if (!token) return Promise.resolve();
+          refreshMePromise = (async () => {
+            try {
+              const { user } = await authApi.me();
+              set({ user });
+            } catch {
+              // handleUnauthorized() already ran via the client on a 401;
+              // other failures (offline) are ignored — keep using the cached user.
+            } finally {
+              refreshMePromise = null;
+            }
+          })();
+          return refreshMePromise;
+        },
 
-      clearError: () => set({ error: null }),
+        changePassword: async (currentPassword, newPassword) => {
+          set({ isLoading: true, error: null });
+          try {
+            await authApi.changePassword(currentPassword, newPassword);
+            set({ isLoading: false });
+          } catch (e) {
+            set({ error: e instanceof ApiError ? e.message : 'Could not change password', isLoading: false });
+            throw e;
+          }
+        },
 
-      handleUnauthorized: () => {
-        // Only meaningful once actually signed in — avoids a stray 401
-        // (e.g. a mistyped login attempt) accidentally resetting mode.
-        if (get().mode === 'account') set({ user: null, token: null });
-      },
-    }),
+        clearError: () => set({ error: null }),
+
+        handleUnauthorized: () => {
+          // Only meaningful once actually signed in — avoids a stray 401
+          // (e.g. a mistyped login attempt) accidentally resetting mode.
+          if (get().mode === 'account') set({ user: null, token: null });
+        },
+      };
+    },
     {
       name: 'quick-todo-auth',
       partialize: (s) => ({ user: s.user, token: s.token, mode: s.mode, hasOnboarded: s.hasOnboarded }),

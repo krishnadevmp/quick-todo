@@ -1,4 +1,5 @@
 import { getDB, type SyncQueueItem } from '@/db/schema';
+import type { Expense } from '@/types';
 import * as outbox from './outbox';
 import { TaskRepository } from '@/db/taskRepository';
 import { ExpenseRepository } from '@/db/expenseRepository';
@@ -30,6 +31,17 @@ function isAccountMode(): boolean {
 
 // ── Push ──────────────────────────────────────────────────────────────────
 
+/** POST /expenses, then re-key the local Dexie row to the server-assigned id. */
+async function createExpense(expense: Expense): Promise<void> {
+  const created = await expensesApi.create(expense);
+  await ExpenseRepository.rekey(expense.id, created);
+  useExpenseStore.setState((s) => ({
+    expenses: s.expenses
+      .map((e) => (e.id === expense.id ? created : e))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
+  }));
+}
+
 async function pushOne(item: SyncQueueItem): Promise<'ok' | 'retry' | 'drop'> {
   try {
     if (item.entity === 'task') {
@@ -49,23 +61,23 @@ async function pushOne(item: SyncQueueItem): Promise<'ok' | 'retry' | 'drop'> {
       } else {
         const expense = await ExpenseRepository.getById(item.entityId);
         if (!expense) return 'drop';
-        try {
-          const updated = await expensesApi.update(item.entityId, expense);
-          useExpenseStore.setState((s) => ({
-            expenses: s.expenses.map((e) => (e.id === updated.id ? updated : e)),
-          }));
-        } catch (e) {
-          if (!(e instanceof ApiError) || e.status !== 404) throw e;
+        if (item.op === 'insert') {
           // Never created server-side yet (expenses have no import/upsert
-          // endpoint, unlike tasks) — create it, then re-key the local row
-          // from its client-generated id to the server-assigned one.
-          const created = await expensesApi.create(expense);
-          await ExpenseRepository.rekey(expense.id, created);
-          useExpenseStore.setState((s) => ({
-            expenses: s.expenses
-              .map((e) => (e.id === expense.id ? created : e))
-              .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
-          }));
+          // endpoint, unlike tasks) — go straight to POST. Skips a PATCH
+          // that's guaranteed to 404 on a brand-new expense.
+          await createExpense(expense);
+        } else {
+          try {
+            const updated = await expensesApi.update(item.entityId, expense);
+            useExpenseStore.setState((s) => ({
+              expenses: s.expenses.map((e) => (e.id === updated.id ? updated : e)),
+            }));
+          } catch (e) {
+            if (!(e instanceof ApiError) || e.status !== 404) throw e;
+            // Fallback safety net for a queue item pre-dating the 'insert'
+            // op (or any other way an update outran its own create).
+            await createExpense(expense);
+          }
         }
       }
     } else {
